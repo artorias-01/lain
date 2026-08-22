@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { audioManager } from '../../lib/audioManager';
+import { youtubeEngine } from '../../lib/youtubePlayer';
 
 export const ProgressBar: React.FC = () => {
   const fillRef = useRef<HTMLDivElement>(null);
@@ -21,8 +21,11 @@ export const ProgressBar: React.FC = () => {
     let animFrameId: number;
 
     const updateProgress = () => {
-      const current = audioManager.currentTimeRef.current;
-      const duration = audioManager.durationRef.current;
+      // Update engine time ref from YouTube player
+      youtubeEngine.updateTimeRef();
+
+      const current = youtubeEngine.currentTimeRef.current;
+      const duration = youtubeEngine.durationRef.current;
 
       if (fillRef.current && duration > 0) {
         const percent = Math.min(100, Math.max(0, (current / duration) * 100));
@@ -47,16 +50,16 @@ export const ProgressBar: React.FC = () => {
   }, []);
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
-    if (!trackContainerRef.current || audioManager.durationRef.current <= 0) return;
+    if (!trackContainerRef.current || youtubeEngine.durationRef.current <= 0) return;
     const rect = trackContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-    const newTime = ratio * audioManager.durationRef.current;
-    audioManager.seek(newTime);
+    const newTime = ratio * youtubeEngine.durationRef.current;
+    youtubeEngine.seekTo(newTime);
   };
 
   const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    audioManager.isSeeking = true;
+    youtubeEngine.isSeeking = true;
     handleSeek(e);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
@@ -64,7 +67,7 @@ export const ProgressBar: React.FC = () => {
     };
 
     const onMouseUp = () => {
-      audioManager.isSeeking = false;
+      youtubeEngine.isSeeking = false;
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
@@ -99,7 +102,7 @@ export const ProgressBar: React.FC = () => {
             className="h-full bg-gradient-to-r from-accent to-accent-hover rounded-full relative transition-[height] duration-200"
             style={{ width: '0%' }}
           >
-            {/* Pulsing Light Cap */}
+            {/* Pulsing Cap */}
             <div className="absolute right-0 top-0 bottom-0 w-2 bg-white rounded-full opacity-80 shadow-[0_0_8px_var(--accent-glow)]" />
           </div>
         </div>

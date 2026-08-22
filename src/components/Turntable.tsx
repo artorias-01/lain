@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { audioManager } from '../lib/audioManager';
+import { youtubeEngine } from '../lib/youtubePlayer';
 
 interface TurntableProps {
   isPlaying: boolean;
@@ -10,8 +10,6 @@ interface TurntableProps {
 export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) => {
   const discRef = useRef<HTMLDivElement>(null);
   const tonearmPivotRef = useRef<HTMLDivElement>(null);
-  const tonearmArmRef = useRef<SVGGElement>(null);
-  const stylusTipRef = useRef<SVGCircleElement>(null);
 
   // GSAP Timeline References for stateful interruptible animations
   const spinTimelineRef = useRef<gsap.core.Tween | null>(null);
@@ -21,7 +19,6 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
   useEffect(() => {
     if (!discRef.current) return;
 
-    // Continuous infinite rotation tween
     spinTimelineRef.current = gsap.to(discRef.current, {
       rotation: '+=360',
       duration: 1.8, // ~33 1/3 RPM
@@ -59,9 +56,6 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
   useEffect(() => {
     if (!tonearmPivotRef.current) return;
 
-    // Resting Angle: +36 deg (swung right off record)
-    // Outer Groove Angle: +12 deg (stylus on outer vinyl edge)
-    // Inner Groove Angle: -6 deg (stylus at inner vinyl label)
     const REST_ANGLE = 36;
     const OUTER_ANGLE = 12;
     const INNER_ANGLE = -6;
@@ -69,14 +63,12 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
     if (armAnimRef.current) armAnimRef.current.kill();
 
     if (isPlaying) {
-      // 1. Calculate current progress ratio
       let progress = 0;
-      if (audioManager.durationRef.current > 0) {
-        progress = Math.min(1, Math.max(0, audioManager.currentTimeRef.current / audioManager.durationRef.current));
+      if (youtubeEngine.durationRef.current > 0) {
+        progress = Math.min(1, Math.max(0, youtubeEngine.currentTimeRef.current / youtubeEngine.durationRef.current));
       }
       const targetAngle = OUTER_ANGLE - progress * (OUTER_ANGLE - INNER_ANGLE);
 
-      // 2. Animate arm swing over vinyl and lower needle onto record
       const tl = gsap.timeline();
       tl.to(tonearmPivotRef.current, {
         rotation: targetAngle,
@@ -91,7 +83,6 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
       }, '-=0.3');
 
     } else {
-      // Pause: Lift arm up and swing back to rest position
       const tl = gsap.timeline();
       tl.to(tonearmPivotRef.current, {
         scale: 1.08,
@@ -112,10 +103,9 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
     let animFrameId: number;
 
     const updateArmDrift = () => {
-      if (isPlaying && tonearmPivotRef.current && audioManager.durationRef.current > 0) {
-        const progress = Math.min(1, Math.max(0, audioManager.currentTimeRef.current / audioManager.durationRef.current));
+      if (isPlaying && tonearmPivotRef.current && youtubeEngine.durationRef.current > 0) {
+        const progress = Math.min(1, Math.max(0, youtubeEngine.currentTimeRef.current / youtubeEngine.durationRef.current));
         const currentTargetAngle = 12 - progress * (12 - (-6));
-        // Smooth subtle drift
         gsap.to(tonearmPivotRef.current, {
           rotation: currentTargetAngle,
           duration: 0.5,
@@ -149,7 +139,7 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
         />
       ))}
 
-      {/* Speed Selector Buttons (Top Left Deck) */}
+      {/* Speed Selector Buttons */}
       <div className="absolute top-8 left-8 flex items-center gap-2 z-10">
         <div className="px-2.5 py-1 rounded-md bg-accent/20 border border-accent/40 text-accent font-mono text-[11px] font-bold tracking-wider">
           33 RPM
@@ -159,16 +149,11 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
         </div>
       </div>
 
-      {/* Pitch Fader Slider Strip (Far Right Deck) */}
-      <div className="absolute right-8 top-12 bottom-12 w-3 bg-[#0d0e13] rounded-full border border-white/5 flex items-center justify-center z-10 hidden sm:flex">
-        <div className="w-5 h-3 bg-slate-300 rounded-sm shadow-md border border-black/50" />
-      </div>
-
       {/* Main 2D Vinyl Disc Container */}
       <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] flex-shrink-0 z-10 translate-x-[-30px] sm:translate-x-[-40px]">
-        {/* Recessed Platter Rim Well */}
+        {/* Recessed Platter Well */}
         <div className="absolute inset-[-12px] rounded-full bg-[#0a0b0e] border-2 border-white/10 shadow-2xl" />
-        
+
         {/* Metallic Strobe Dots Platter Edge */}
         <div className="absolute inset-[-6px] rounded-full bg-gradient-to-tr from-slate-700 via-slate-500 to-slate-800 opacity-60" />
 
@@ -226,7 +211,7 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
             </filter>
           </defs>
 
-          {/* Base Pivot Post Housing (Origin point around 110, 55) */}
+          {/* Base Pivot Post Housing */}
           <circle cx="110" cy="55" r="28" fill="#1e202c" stroke="#334155" strokeWidth="3" />
           <circle cx="110" cy="55" r="22" fill="url(#brassAccent)" />
           <circle cx="110" cy="55" r="14" fill="#0f172a" />
@@ -255,17 +240,11 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
 
           {/* Headshell & Cartridge Assembly */}
           <g transform="translate(45, 240) rotate(-22)">
-            {/* Headshell Connector */}
             <rect x="-6" y="0" width="12" height="8" rx="2" fill="#0f172a" />
-            {/* Main Headshell Body */}
             <path d="M -8 8 L 8 8 L 6 36 L -6 36 Z" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
-            {/* Ortofon Gold Cartridge */}
             <rect x="-5" y="24" width="10" height="18" rx="2" fill="url(#brassAccent)" />
-            {/* Stylus Needle Shaft */}
             <polygon points="0,42 -3,52 3,52" fill="#f8fafc" />
-            {/* Glowing Stylus Tip */}
             <circle
-              ref={stylusTipRef}
               cx="0"
               cy="53"
               r="2.5"
@@ -279,7 +258,7 @@ export const Turntable: React.FC<TurntableProps> = ({ isPlaying, albumArtUrl }) 
       {/* Floating Status Indicator */}
       <div className="absolute bottom-6 left-8 flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 z-20 text-xs font-mono text-text-secondary">
         <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-accent animate-ping' : 'bg-text-muted'}`} />
-        <span>{isPlaying ? 'TONEARM DROPPED • SPINNING' : 'TONEARM RESTING • PAUSED'}</span>
+        <span>{isPlaying ? 'FULL-SONG PLAYBACK • SPINNING' : 'TONEARM RESTING • PAUSED'}</span>
       </div>
     </div>
   );

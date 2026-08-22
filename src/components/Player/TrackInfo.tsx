@@ -3,16 +3,15 @@ import { usePlayerStore } from '../../store/usePlayerStore';
 import { Disc, Music2 } from 'lucide-react';
 
 export const TrackInfo: React.FC = () => {
-  const { tracks, currentTrackIndex, isPlaying } = usePlayerStore();
-  const currentTrack = tracks[currentTrackIndex] || tracks[0];
+  const { activeTrack, isPlaying } = usePlayerStore();
 
   return (
     <div className="flex items-center gap-4 min-w-0">
-      {/* Thumbnail Album Art */}
+      {/* Thumbnail Cover Art */}
       <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-xl overflow-hidden shadow-lg border border-border-subtle flex-shrink-0 group">
         <img
-          src={currentTrack.albumArtUrl}
-          alt={currentTrack.title}
+          src={activeTrack.thumbnailUrl}
+          alt={activeTrack.title}
           className="w-full h-full object-cover"
         />
         <div
@@ -26,24 +25,19 @@ export const TrackInfo: React.FC = () => {
 
       {/* Metadata & Title */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="px-2 py-0.5 text-[10px] font-mono tracking-wider font-semibold uppercase rounded-full bg-accent-dim text-accent border border-accent/20">
-            {currentTrack.genre}
-          </span>
-          <span className="text-[11px] font-mono text-text-muted">
-            {currentTrack.bpm} BPM • {currentTrack.year}
-          </span>
-        </div>
-
         <h3 className="font-display font-bold text-lg md:text-xl text-text-primary truncate tracking-tight">
-          {currentTrack.title}
+          {activeTrack.title}
         </h3>
-        
-        <p className="text-xs md:text-sm text-text-secondary truncate flex items-center gap-1.5 font-medium">
+
+        <p className="text-xs md:text-sm text-text-secondary truncate flex items-center gap-1.5 font-medium mt-0.5">
           <Music2 className="w-3.5 h-3.5 text-accent flex-shrink-0" />
-          <span>{currentTrack.artist}</span>
-          <span className="text-text-muted">•</span>
-          <span className="text-text-muted truncate">{currentTrack.album}</span>
+          <span>{activeTrack.artist}</span>
+          {activeTrack.album && (
+            <>
+              <span className="text-text-muted">•</span>
+              <span className="text-text-muted truncate">{activeTrack.album}</span>
+            </>
+          )}
         </p>
       </div>
     </div>

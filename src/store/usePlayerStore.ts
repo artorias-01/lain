@@ -1,33 +1,27 @@
 import { create } from 'zustand';
-import { TRACKS, Track } from '../lib/trackData';
-import { audioManager } from '../lib/audioManager';
-import { searchOnlineSongs } from '../lib/searchApi';
-
-export type ThemeOption = 'vintage-gold' | 'warm-vermilion' | 'electric-teal' | 'neon-violet' | 'cyber-emerald';
-export type TabOption = 'home' | 'search' | 'library' | 'turntable';
+import { youtubeEngine, TrackItem } from '../lib/youtubePlayer';
+import { STARTER_QUEUE, searchYouTubeTracks } from '../lib/youtubeSearch';
 
 interface PlayerState {
-  tracks: Track[];
+  queue: TrackItem[];
   currentTrackIndex: number;
-  activeTrack: Track;
+  activeTrack: TrackItem;
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
   repeatMode: 'none' | 'one' | 'all';
   isShuffle: boolean;
-  theme: ThemeOption;
-  
-  // Search & Navigation State
-  activeTab: TabOption;
+
+  // Search State
   searchQuery: string;
-  searchResults: Track[];
+  searchResults: TrackItem[];
   isSearching: boolean;
-  likedTrackIds: string[];
-  isTurntableDrawerOpen: boolean;
+  apiKeyMissing: boolean;
+  searchMessage: string | null;
 
   // Actions
   playTrackIndex: (index: number) => void;
-  playTrack: (track: Track) => void;
+  playTrack: (track: TrackItem) => void;
   togglePlay: () => void;
   play: () => void;
   pause: () => void;
@@ -37,34 +31,37 @@ interface PlayerState {
   toggleMute: () => void;
   toggleShuffle: () => void;
   cycleRepeatMode: () => void;
-  setTheme: (theme: ThemeOption) => void;
-  setTab: (tab: TabOption) => void;
   setSearchQuery: (query: string) => void;
-  searchTracks: (query: string) => Promise<void>;
-  toggleLikeTrack: (id: string) => void;
-  toggleTurntableDrawer: () => void;
+  search: (query: string) => Promise<void>;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
-  audioManager.audio.addEventListener('ended', () => {
-    const { repeatMode, isShuffle, currentTrackIndex, tracks } = get();
-    if (repeatMode === 'one') {
-      audioManager.seek(0);
-      audioManager.play();
-    } else if (isShuffle) {
-      const randomIndex = Math.floor(Math.random() * tracks.length);
-      get().playTrackIndex(randomIndex);
-    } else if (repeatMode === 'all' || currentTrackIndex < tracks.length - 1) {
-      get().nextTrack();
-    } else {
+  // Subscribe to YouTube audio engine events
+  youtubeEngine.subscribe((event) => {
+    if (event === 'playing') {
+      set({ isPlaying: true });
+    } else if (event === 'paused') {
       set({ isPlaying: false });
+    } else if (event === 'ended') {
+      const { repeatMode, isShuffle, currentTrackIndex, queue } = get();
+      if (repeatMode === 'one') {
+        youtubeEngine.seekTo(0);
+        youtubeEngine.play();
+      } else if (isShuffle) {
+        const randomIndex = Math.floor(Math.random() * queue.length);
+        get().playTrackIndex(randomIndex);
+      } else if (repeatMode === 'all' || currentTrackIndex < queue.length - 1) {
+        get().nextTrack();
+      } else {
+        set({ isPlaying: false });
+      }
     }
   });
 
-  const defaultTrack = TRACKS[0];
+  const defaultTrack = STARTER_QUEUE[0];
 
   return {
-    tracks: TRACKS,
+    queue: STARTER_QUEUE,
     currentTrackIndex: 0,
     activeTrack: defaultTrack,
     isPlaying: false,
@@ -72,23 +69,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     isMuted: false,
     repeatMode: 'all',
     isShuffle: false,
-    theme: 'vintage-gold',
 
-    activeTab: 'home',
     searchQuery: '',
-    searchResults: [],
+    searchResults: STARTER_QUEUE,
     isSearching: false,
-    likedTrackIds: [TRACKS[0].id, TRACKS[2].id],
-    isTurntableDrawerOpen: false,
+    apiKeyMissing: false,
+    searchMessage: null,
 
     playTrackIndex: (index: number) => {
-      const { tracks } = get();
-      if (index < 0 || index >= tracks.length) return;
-      
-      const nextTrack = tracks[index];
+      const { queue } = get();
+      if (index < 0 || index >= queue.length) return;
+
+      const nextTrack = queue[index];
       set({ currentTrackIndex: index, activeTrack: nextTrack, isPlaying: true });
-      audioManager.loadTrack(nextTrack);
-      audioManager.play();
+      youtubeEngine.loadVideoById(nextTrack.videoId, true);
 
       if (nextTrack.accentColor) {
         document.documentElement.style.setProperty('--accent-color', nextTrack.accentColor);
@@ -97,26 +91,24 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       }
     },
 
-    playTrack: (track: Track) => {
-      const { tracks } = get();
-      // If track is in existing list, find index, else prepend
-      let idx = tracks.findIndex((t) => t.id === track.id || t.audioUrl === track.audioUrl);
-      let updatedTracks = [...tracks];
+    playTrack: (track: TrackItem) => {
+      const { queue } = get();
+      let idx = queue.findIndex((t) => t.videoId === track.videoId);
+      let updatedQueue = [...queue];
 
       if (idx === -1) {
-        updatedTracks = [track, ...tracks];
+        updatedQueue = [track, ...queue];
         idx = 0;
       }
 
       set({
-        tracks: updatedTracks,
+        queue: updatedQueue,
         currentTrackIndex: idx,
         activeTrack: track,
         isPlaying: true,
       });
 
-      audioManager.loadTrack(track);
-      audioManager.play();
+      youtubeEngine.loadVideoById(track.videoId, true);
 
       if (track.accentColor) {
         document.documentElement.style.setProperty('--accent-color', track.accentColor);
@@ -128,64 +120,65 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     togglePlay: () => {
       const { isPlaying, activeTrack } = get();
       if (isPlaying) {
-        audioManager.pause();
+        youtubeEngine.pause();
         set({ isPlaying: false });
       } else {
-        if (!audioManager.audio.src) {
-          audioManager.loadTrack(activeTrack);
+        if (!youtubeEngine.currentTimeRef.current) {
+          youtubeEngine.loadVideoById(activeTrack.videoId, true);
+        } else {
+          youtubeEngine.play();
         }
-        audioManager.play();
         set({ isPlaying: true });
       }
     },
 
     play: () => {
-      audioManager.play();
+      youtubeEngine.play();
       set({ isPlaying: true });
     },
 
     pause: () => {
-      audioManager.pause();
+      youtubeEngine.pause();
       set({ isPlaying: false });
     },
 
     nextTrack: () => {
-      const { currentTrackIndex, tracks, isShuffle } = get();
+      const { currentTrackIndex, queue, isShuffle } = get();
       let nextIndex = currentTrackIndex + 1;
       if (isShuffle) {
-        nextIndex = Math.floor(Math.random() * tracks.length);
-      } else if (nextIndex >= tracks.length) {
+        nextIndex = Math.floor(Math.random() * queue.length);
+      } else if (nextIndex >= queue.length) {
         nextIndex = 0;
       }
       get().playTrackIndex(nextIndex);
     },
 
     previousTrack: () => {
-      const { currentTrackIndex, tracks } = get();
-      if (audioManager.currentTimeRef.current > 3) {
-        audioManager.seek(0);
+      const { currentTrackIndex, queue } = get();
+      if (youtubeEngine.currentTimeRef.current > 3) {
+        youtubeEngine.seekTo(0);
         return;
       }
       let prevIndex = currentTrackIndex - 1;
       if (prevIndex < 0) {
-        prevIndex = tracks.length - 1;
+        prevIndex = queue.length - 1;
       }
       get().playTrackIndex(prevIndex);
     },
 
     setVolume: (val: number) => {
       const cleanVal = Math.max(0, Math.min(1, val));
-      audioManager.setVolume(cleanVal);
+      youtubeEngine.setVolume(cleanVal);
       set({ volume: cleanVal, isMuted: cleanVal === 0 });
     },
 
     toggleMute: () => {
       const { isMuted, volume } = get();
       if (isMuted) {
-        audioManager.setVolume(volume || 0.8);
+        youtubeEngine.setVolume(volume || 0.8);
         set({ isMuted: false });
       } else {
-        audioManager.setVolume(0);
+        youtubeEngine.setVolume(0);
         set({ isMuted: true });
       }
     },
@@ -202,46 +195,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       });
     },
 
-    setTheme: (theme: ThemeOption) => {
-      set({ theme });
-      if (theme === 'vintage-gold') document.documentElement.removeAttribute('data-theme');
-      else document.documentElement.setAttribute('data-theme', theme);
-    },
-
-    setTab: (tab: TabOption) => {
-      set({ activeTab: tab });
-    },
-
     setSearchQuery: (query: string) => {
       set({ searchQuery: query });
-      if (query.trim().length > 0) {
-        set({ activeTab: 'search' });
-        get().searchTracks(query);
-      }
+      get().search(query);
     },
 
-    searchTracks: async (query: string) => {
-      if (!query.trim()) {
-        set({ searchResults: [], isSearching: false });
-        return;
-      }
+    search: async (query: string) => {
       set({ isSearching: true });
-      const results = await searchOnlineSongs(query);
-      set({ searchResults: results, isSearching: false });
-    },
-
-    toggleLikeTrack: (id: string) => {
-      set((state) => {
-        const exists = state.likedTrackIds.includes(id);
-        const updated = exists
-          ? state.likedTrackIds.filter((tId) => tId !== id)
-          : [...state.likedTrackIds, id];
-        return { likedTrackIds: updated };
+      const res = await searchYouTubeTracks(query);
+      set({
+        searchResults: res.tracks,
+        apiKeyMissing: !res.hasApiKey,
+        searchMessage: res.message || null,
+        isSearching: false,
       });
-    },
-
-    toggleTurntableDrawer: () => {
-      set((state) => ({ isTurntableDrawerOpen: !state.isTurntableDrawerOpen }));
     },
   };
 });
