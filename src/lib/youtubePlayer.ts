@@ -8,9 +8,9 @@ export interface TrackItem {
   title: string;
   artist: string;
   album?: string;
-  duration: number;
+  duration: number; // Duration in real seconds
   thumbnailUrl: string;
-  accentColor: string;
+  accentColor?: string;
 }
 
 declare global {
@@ -19,6 +19,8 @@ declare global {
     onYouTubeIframeAPIReady: () => void;
   }
 }
+
+export type PlayerEventType = 'playing' | 'paused' | 'ended' | 'ready' | 'error';
 
 class YouTubeAudioEngine {
   private static instance: YouTubeAudioEngine;
@@ -31,7 +33,7 @@ class YouTubeAudioEngine {
   public durationRef = { current: 0 };
   public isSeeking = false;
 
-  private listeners: Set<(state: 'playing' | 'paused' | 'ended' | 'ready') => void> = new Set();
+  private listeners: Set<(state: PlayerEventType, errorCode?: number) => void> = new Set();
 
   private constructor() {
     this.initYouTubeAPI();
@@ -47,13 +49,11 @@ class YouTubeAudioEngine {
   private initYouTubeAPI() {
     if (typeof window === 'undefined') return;
 
-    // Check if script is already injected
     if (window.YT && window.YT.Player) {
       this.createPlayer();
       return;
     }
 
-    // Inject YouTube IFrame API script
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
     const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -69,7 +69,6 @@ class YouTubeAudioEngine {
     if (!container) {
       container = document.createElement('div');
       container.id = 'yt-audio-player-container';
-      // YouTube requires a non-zero size and non-'display:none' container to fire events properly
       container.style.position = 'fixed';
       container.style.top = '-9999px';
       container.style.left = '-9999px';
@@ -103,7 +102,6 @@ class YouTubeAudioEngine {
         onStateChange: (event: any) => {
           if (!this.player) return;
 
-          // YT.PlayerState: PLAYING (1), PAUSED (2), ENDED (0), BUFFERING (3)
           if (event.data === window.YT.PlayerState.PLAYING) {
             this.durationRef.current = this.player.getDuration() || 0;
             this.notifyListeners('playing');
@@ -112,6 +110,11 @@ class YouTubeAudioEngine {
           } else if (event.data === window.YT.PlayerState.ENDED) {
             this.notifyListeners('ended');
           }
+        },
+        onError: (event: any) => {
+          console.warn('YouTube Player error code:', event.data);
+          // Codes: 2 (invalid param), 5 (HTML5 error), 100 (not found/private), 101/150 (embedding disabled by owner)
+          this.notifyListeners('error', event.data);
         },
       },
     });
@@ -151,7 +154,6 @@ class YouTubeAudioEngine {
   }
 
   public setVolume(volume: number) {
-    // YouTube API accepts 0 to 100
     if (this.isReady && this.player && typeof this.player.setVolume === 'function') {
       const ytVol = Math.max(0, Math.min(100, Math.round(volume * 100)));
       this.player.setVolume(ytVol);
@@ -167,13 +169,13 @@ class YouTubeAudioEngine {
     }
   }
 
-  public subscribe(callback: (state: 'playing' | 'paused' | 'ended' | 'ready') => void) {
+  public subscribe(callback: (state: PlayerEventType, errorCode?: number) => void) {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
   }
 
-  private notifyListeners(state: 'playing' | 'paused' | 'ended' | 'ready') {
-    this.listeners.forEach((cb) => cb(state));
+  private notifyListeners(state: PlayerEventType, errorCode?: number) {
+    this.listeners.forEach((cb) => cb(state, errorCode));
   }
 }
 

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { youtubeEngine, TrackItem } from '../lib/youtubePlayer';
+import { youtubeEngine, TrackItem, PlayerEventType } from '../lib/youtubePlayer';
 import { STARTER_QUEUE, searchYouTubeTracks } from '../lib/youtubeSearch';
 
 interface PlayerState {
@@ -12,12 +12,13 @@ interface PlayerState {
   repeatMode: 'none' | 'one' | 'all';
   isShuffle: boolean;
 
-  // Search State
+  // Search & Error State
   searchQuery: string;
   searchResults: TrackItem[];
   isSearching: boolean;
   apiKeyMissing: boolean;
   searchMessage: string | null;
+  trackErrorMessage: string | null;
 
   // Actions
   playTrackIndex: (index: number) => void;
@@ -33,13 +34,14 @@ interface PlayerState {
   cycleRepeatMode: () => void;
   setSearchQuery: (query: string) => void;
   search: (query: string) => Promise<void>;
+  clearErrorMessage: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
   // Subscribe to YouTube audio engine events
-  youtubeEngine.subscribe((event) => {
+  youtubeEngine.subscribe((event: PlayerEventType, errorCode?: number) => {
     if (event === 'playing') {
-      set({ isPlaying: true });
+      set({ isPlaying: true, trackErrorMessage: null });
     } else if (event === 'paused') {
       set({ isPlaying: false });
     } else if (event === 'ended') {
@@ -55,6 +57,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       } else {
         set({ isPlaying: false });
       }
+    } else if (event === 'error') {
+      console.warn('YouTube Player error encountered, skipping track. Code:', errorCode);
+      set({
+        isPlaying: false,
+        trackErrorMessage: `Track unavailable for playback (Code ${errorCode || 'embed-disabled'}) — skipping to next.`,
+      });
+      // Auto-advance to next track after brief delay so user isn't stuck
+      setTimeout(() => {
+        get().nextTrack();
+      }, 1200);
     }
   });
 
@@ -75,20 +87,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     isSearching: false,
     apiKeyMissing: false,
     searchMessage: null,
+    trackErrorMessage: null,
 
     playTrackIndex: (index: number) => {
       const { queue } = get();
       if (index < 0 || index >= queue.length) return;
 
       const nextTrack = queue[index];
-      set({ currentTrackIndex: index, activeTrack: nextTrack, isPlaying: true });
+      set({ currentTrackIndex: index, activeTrack: nextTrack, isPlaying: true, trackErrorMessage: null });
       youtubeEngine.loadVideoById(nextTrack.videoId, true);
-
-      if (nextTrack.accentColor) {
-        document.documentElement.style.setProperty('--accent-color', nextTrack.accentColor);
-        document.documentElement.style.setProperty('--accent-glow', `${nextTrack.accentColor}66`);
-        document.documentElement.style.setProperty('--accent-dim', `${nextTrack.accentColor}1f`);
-      }
     },
 
     playTrack: (track: TrackItem) => {
@@ -106,15 +113,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         currentTrackIndex: idx,
         activeTrack: track,
         isPlaying: true,
+        trackErrorMessage: null,
       });
 
       youtubeEngine.loadVideoById(track.videoId, true);
-
-      if (track.accentColor) {
-        document.documentElement.style.setProperty('--accent-color', track.accentColor);
-        document.documentElement.style.setProperty('--accent-glow', `${track.accentColor}66`);
-        document.documentElement.style.setProperty('--accent-dim', `${track.accentColor}1f`);
-      }
     },
 
     togglePlay: () => {
@@ -209,6 +211,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         searchMessage: res.message || null,
         isSearching: false,
       });
+    },
+
+    clearErrorMessage: () => {
+      set({ trackErrorMessage: null });
     },
   };
 });

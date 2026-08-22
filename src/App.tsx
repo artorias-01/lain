@@ -1,26 +1,15 @@
-import React, { useEffect } from 'react';
-import { HeroSection } from './components/Hero/HeroSection';
-import { PlayerSection } from './components/Player/PlayerSection';
-import { TrackListSection } from './components/TrackList/TrackListSection';
-import { AboutSection } from './components/About/AboutSection';
-import { initLenisInstance } from './lib/lenis';
+import React from 'react';
+import { MainTrackView } from './components/Player/MainTrackView';
+import { SpotifyPlayerBar } from './components/Player/SpotifyPlayerBar';
 
 export const App: React.FC = () => {
-  useEffect(() => {
-    // Initialize Lenis inertial smooth scroll provider synced with GSAP ticker
-    const lenis = initLenisInstance();
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary relative selection:bg-accent selection:text-black overflow-x-hidden">
-      {/* Single Linear Page Flow */}
-      <HeroSection />
-      <PlayerSection />
-      <TrackListSection />
-      <AboutSection />
+    <div className="min-h-screen bg-[#121212] text-gray-100 font-sans relative selection:bg-white selection:text-black">
+      {/* Main Track List & Search View */}
+      <MainTrackView />
+
+      {/* Fixed Spotify Now-Playing Bottom Player Bar */}
+      <SpotifyPlayerBar />
     </div>
   );
 };
