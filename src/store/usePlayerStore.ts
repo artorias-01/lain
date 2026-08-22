@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { TRACKS, Track } from '../lib/trackData';
 import { audioManager } from '../lib/audioManager';
+import { searchOnlineSongs } from '../lib/searchApi';
 
 export type ThemeOption = 'vintage-gold' | 'warm-vermilion' | 'electric-teal' | 'neon-violet' | 'cyber-emerald';
+export type TabOption = 'home' | 'search' | 'library' | 'turntable';
 
 interface PlayerState {
   tracks: Track[];
   currentTrackIndex: number;
+  activeTrack: Track;
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
@@ -14,8 +17,17 @@ interface PlayerState {
   isShuffle: boolean;
   theme: ThemeOption;
   
+  // Search & Navigation State
+  activeTab: TabOption;
+  searchQuery: string;
+  searchResults: Track[];
+  isSearching: boolean;
+  likedTrackIds: string[];
+  isTurntableDrawerOpen: boolean;
+
   // Actions
   playTrackIndex: (index: number) => void;
+  playTrack: (track: Track) => void;
   togglePlay: () => void;
   play: () => void;
   pause: () => void;
@@ -26,10 +38,14 @@ interface PlayerState {
   toggleShuffle: () => void;
   cycleRepeatMode: () => void;
   setTheme: (theme: ThemeOption) => void;
+  setTab: (tab: TabOption) => void;
+  setSearchQuery: (query: string) => void;
+  searchTracks: (query: string) => Promise<void>;
+  toggleLikeTrack: (id: string) => void;
+  toggleTurntableDrawer: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
-  // Auto advance track on audio completion
   audioManager.audio.addEventListener('ended', () => {
     const { repeatMode, isShuffle, currentTrackIndex, tracks } = get();
     if (repeatMode === 'one') {
@@ -45,9 +61,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     }
   });
 
+  const defaultTrack = TRACKS[0];
+
   return {
     tracks: TRACKS,
     currentTrackIndex: 0,
+    activeTrack: defaultTrack,
     isPlaying: false,
     volume: 0.8,
     isMuted: false,
@@ -55,12 +74,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     isShuffle: false,
     theme: 'vintage-gold',
 
+    activeTab: 'home',
+    searchQuery: '',
+    searchResults: [],
+    isSearching: false,
+    likedTrackIds: [TRACKS[0].id, TRACKS[2].id],
+    isTurntableDrawerOpen: false,
+
     playTrackIndex: (index: number) => {
       const { tracks } = get();
       if (index < 0 || index >= tracks.length) return;
       
       const nextTrack = tracks[index];
-      set({ currentTrackIndex: index, isPlaying: true });
+      set({ currentTrackIndex: index, activeTrack: nextTrack, isPlaying: true });
       audioManager.loadTrack(nextTrack);
       audioManager.play();
 
@@ -71,14 +97,42 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       }
     },
 
+    playTrack: (track: Track) => {
+      const { tracks } = get();
+      // If track is in existing list, find index, else prepend
+      let idx = tracks.findIndex((t) => t.id === track.id || t.audioUrl === track.audioUrl);
+      let updatedTracks = [...tracks];
+
+      if (idx === -1) {
+        updatedTracks = [track, ...tracks];
+        idx = 0;
+      }
+
+      set({
+        tracks: updatedTracks,
+        currentTrackIndex: idx,
+        activeTrack: track,
+        isPlaying: true,
+      });
+
+      audioManager.loadTrack(track);
+      audioManager.play();
+
+      if (track.accentColor) {
+        document.documentElement.style.setProperty('--accent-color', track.accentColor);
+        document.documentElement.style.setProperty('--accent-glow', `${track.accentColor}66`);
+        document.documentElement.style.setProperty('--accent-dim', `${track.accentColor}1f`);
+      }
+    },
+
     togglePlay: () => {
-      const { isPlaying, currentTrackIndex, tracks } = get();
+      const { isPlaying, activeTrack } = get();
       if (isPlaying) {
         audioManager.pause();
         set({ isPlaying: false });
       } else {
         if (!audioManager.audio.src) {
-          audioManager.loadTrack(tracks[currentTrackIndex]);
+          audioManager.loadTrack(activeTrack);
         }
         audioManager.play();
         set({ isPlaying: true });
@@ -152,6 +206,42 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       set({ theme });
       if (theme === 'vintage-gold') document.documentElement.removeAttribute('data-theme');
       else document.documentElement.setAttribute('data-theme', theme);
+    },
+
+    setTab: (tab: TabOption) => {
+      set({ activeTab: tab });
+    },
+
+    setSearchQuery: (query: string) => {
+      set({ searchQuery: query });
+      if (query.trim().length > 0) {
+        set({ activeTab: 'search' });
+        get().searchTracks(query);
+      }
+    },
+
+    searchTracks: async (query: string) => {
+      if (!query.trim()) {
+        set({ searchResults: [], isSearching: false });
+        return;
+      }
+      set({ isSearching: true });
+      const results = await searchOnlineSongs(query);
+      set({ searchResults: results, isSearching: false });
+    },
+
+    toggleLikeTrack: (id: string) => {
+      set((state) => {
+        const exists = state.likedTrackIds.includes(id);
+        const updated = exists
+          ? state.likedTrackIds.filter((tId) => tId !== id)
+          : [...state.likedTrackIds, id];
+        return { likedTrackIds: updated };
+      });
+    },
+
+    toggleTurntableDrawer: () => {
+      set((state) => ({ isTurntableDrawerOpen: !state.isTurntableDrawerOpen }));
     },
   };
 });

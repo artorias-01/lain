@@ -12,7 +12,6 @@ export interface Track {
   genre: string;
 }
 
-// High-end vector SVG album cover generator
 const createEditorialAlbumArt = (title: string, color1: string, color2: string, symbolPath: string) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
     <defs>
@@ -32,7 +31,7 @@ const createEditorialAlbumArt = (title: string, color1: string, color2: string, 
       ${symbolPath}
     </g>
     <text x="300" y="440" font-family="'Syne', 'Space Grotesk', sans-serif" font-weight="800" font-size="28" fill="#ffffff" text-anchor="middle" letter-spacing="5">${title.toUpperCase()}</text>
-    <text x="300" y="475" font-family="'JetBrains Mono', monospace" font-weight="400" font-size="14" fill="rgba(255,255,255,0.7)" text-anchor="middle" letter-spacing="3">ANALOG MASTERING • 33 RPM</text>
+    <text x="300" y="475" font-family="'JetBrains Mono', monospace" font-weight="400" font-size="14" fill="rgba(255,255,255,0.7)" text-anchor="middle" letter-spacing="3">ANALOG MASTERING • SPOTIFY HI-FI</text>
     <rect width="600" height="600" fill="url(#vignette)" />
   </svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -103,5 +102,70 @@ export const TRACKS: Track[] = [
     bpm: 102,
     year: '2023',
     genre: 'Deep Ambient House',
+  },
+  {
+    id: 'track-6',
+    title: 'Starfall Highway',
+    artist: 'Synthwave Velocity',
+    album: 'Neon Horizon 1984',
+    duration: 228,
+    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/05/16/audio_db6591201e.mp3?filename=lofi-orchestra-16230.mp3',
+    albumArtUrl: createEditorialAlbumArt('STARFALL HIGHWAY', '#831843', '#f43f5e', '<polygon points="0,-12 12,12 -12,12"/>'),
+    accentColor: '#f43f5e',
+    bpm: 118,
+    year: '2024',
+    genre: 'Synthwave / Retrowave',
+  },
+  {
+    id: 'track-7',
+    title: 'Velvet Rain',
+    artist: 'Sora & The Piano',
+    album: 'Midnight Coffee',
+    duration: 195,
+    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/02/07/audio_bf8f8c474d.mp3?filename=relaxing-piano-10778.mp3',
+    albumArtUrl: createEditorialAlbumArt('VELVET RAIN', '#1e1b4b', '#6366f1', '<circle cx="0" cy="0" r="10"/><path d="M0 -14 L0 14"/>'),
+    accentColor: '#6366f1',
+    bpm: 80,
+    year: '2023',
+    genre: 'Lo-Fi Chill Beats',
+  },
+  {
+    id: 'track-8',
+    title: 'Quantum Drift',
+    artist: 'Cybernetic Mind',
+    album: 'Neural Network Tapes',
+    duration: 310,
+    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c36e4f3a21.mp3?filename=futuristic-beat-11021.mp3',
+    albumArtUrl: createEditorialAlbumArt('QUANTUM DRIFT', '#064e3b', '#10b981', '<rect x="-10" y="-10" width="20" height="20"/>'),
+    accentColor: '#10b981',
+    bpm: 124,
+    year: '2025',
+    genre: 'Cyberpunk Electronic',
+  },
+  {
+    id: 'track-9',
+    title: 'Golden Hour Reverie',
+    artist: 'Solstice Ensemble',
+    album: 'Warm Horizons',
+    duration: 252,
+    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/01/26/audio_d0c6b12a83.mp3?filename=acoustic-guitar-11990.mp3',
+    albumArtUrl: createEditorialAlbumArt('GOLDEN HOUR', '#7c2d12', '#f97316', '<circle cx="0" cy="0" r="14"/>'),
+    accentColor: '#f97316',
+    bpm: 90,
+    year: '2024',
+    genre: 'Indie Folk Acoustic',
+  },
+  {
+    id: 'track-10',
+    title: 'Interstellar Lullaby',
+    artist: 'Orion Pulse',
+    album: 'Deep Space Tapes',
+    duration: 290,
+    audioUrl: 'https://cdn.pixabay.com/download/audio/2022/04/27/audio_0325b7a0cf.mp3?filename=ambient-space-11500.mp3',
+    albumArtUrl: createEditorialAlbumArt('INTERSTELLAR', '#312e81', '#818cf8', '<ellipse cx="0" cy="0" rx="14" ry="6"/>'),
+    accentColor: '#818cf8',
+    bpm: 65,
+    year: '2023',
+    genre: 'Space Ambient',
   }
 ];
