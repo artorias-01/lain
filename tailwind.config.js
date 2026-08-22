@@ -30,20 +30,13 @@ export default {
         }
       },
       fontFamily: {
-        display: ['Space Grotesk', 'Syne', 'sans-serif'],
+        display: ['Syne', 'Space Grotesk', 'sans-serif'],
         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       animation: {
-        'spin-slow': 'spin 12s linear infinite',
-        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+        'spin-slow': 'spin 14s linear infinite',
       },
-      keyframes: {
-        pulseGlow: {
-          '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px var(--accent-glow))' },
-          '50%': { opacity: '0.9', filter: 'drop-shadow(0 0 25px var(--accent-glow))' },
-        }
-      }
     },
   },
   plugins: [],

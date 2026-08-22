@@ -3,34 +3,41 @@
 @tailwind utilities;
 
 :root {
-  /* Theme: Obsidian Amber (Default) */
-  --bg-primary: #0a0a0c;
-  --bg-elevated: #121318;
-  --bg-card: #181a22;
-  --bg-surface: #20232e;
+  /* Theme: Vintage Champagne Gold (Default Editorial Palette) */
+  --bg-primary: #0b0c10;
+  --bg-elevated: #12141c;
+  --bg-card: #191b26;
+  --bg-surface: #202330;
 
-  --accent-color: #ff9d00;
-  --accent-hover: #ffb733;
-  --accent-glow: rgba(255, 157, 0, 0.4);
-  --accent-dim: rgba(255, 157, 0, 0.12);
+  --accent-color: #d4af37;
+  --accent-hover: #e5c158;
+  --accent-glow: rgba(212, 175, 55, 0.4);
+  --accent-dim: rgba(212, 175, 55, 0.12);
 
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
   --border-color: rgba(255, 255, 255, 0.08);
   --border-subtle: rgba(255, 255, 255, 0.04);
 
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Theme Options */
-[data-theme="cyber-emerald"] {
-  --accent-color: #00ff9d;
-  --accent-hover: #4dffb8;
-  --accent-glow: rgba(0, 255, 157, 0.4);
-  --accent-dim: rgba(0, 255, 157, 0.12);
+/* Dynamic Editorial Theme Options */
+[data-theme="warm-vermilion"] {
+  --accent-color: #ff5733;
+  --accent-hover: #ff7757;
+  --accent-glow: rgba(255, 87, 51, 0.4);
+  --accent-dim: rgba(255, 87, 51, 0.12);
+}
+
+[data-theme="electric-teal"] {
+  --accent-color: #00e5ff;
+  --accent-hover: #54efff;
+  --accent-glow: rgba(0, 229, 255, 0.4);
+  --accent-dim: rgba(0, 229, 255, 0.12);
 }
 
 [data-theme="neon-violet"] {
@@ -40,18 +47,11 @@
   --accent-dim: rgba(168, 85, 247, 0.12);
 }
 
-[data-theme="crimson-red"] {
-  --accent-color: #ff3b5c;
-  --accent-hover: #ff6680;
-  --accent-glow: rgba(255, 59, 92, 0.4);
-  --accent-dim: rgba(255, 59, 92, 0.12);
-}
-
-[data-theme="electric-cyan"] {
-  --accent-color: #00e5ff;
-  --accent-hover: #54efff;
-  --accent-glow: rgba(0, 229, 255, 0.4);
-  --accent-dim: rgba(0, 229, 255, 0.12);
+[data-theme="cyber-emerald"] {
+  --accent-color: #00ff9d;
+  --accent-hover: #4dffb8;
+  --accent-glow: rgba(0, 255, 157, 0.4);
+  --accent-dim: rgba(0, 255, 157, 0.12);
 }
 
 /* Custom Scrollbar */
@@ -69,7 +69,7 @@
   background: var(--accent-color);
 }
 
-/* Custom Range Input */
+/* Range input slider styling */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -98,18 +98,53 @@ input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.25);
 }
 
-/* Glassmorphic cards */
+/* Editorial Glassmorphic Panels */
 .glass-panel {
-  background: rgba(18, 19, 24, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(18, 20, 28, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
 }
 
 .glass-panel-glow {
-  background: rgba(24, 26, 34, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px var(--accent-dim);
+  background: rgba(25, 27, 38, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 30px -5px var(--accent-dim);
+}
+
+/* Concentric vinyl groove background pattern */
+.vinyl-grooves-pattern {
+  background: radial-gradient(circle, 
+    #111218 0%, 
+    #111218 20%, 
+    #0a0b0e 21%, 
+    #181a24 22%, 
+    #0a0b0e 25%, 
+    #151722 26%, 
+    #0d0e14 32%, 
+    #1c1e2b 33%, 
+    #0d0e14 45%, 
+    #191b26 46%, 
+    #090a0d 60%, 
+    #161822 61%, 
+    #08090c 75%, 
+    #12141c 76%, 
+    #050608 100%
+  );
+}
+
+/* Specular sweep reflection overlay */
+.vinyl-glare-overlay {
+  background: conic-gradient(
+    from 45deg,
+    rgba(255, 255, 255, 0) 0deg,
+    rgba(255, 255, 255, 0.15) 35deg,
+    rgba(255, 255, 255, 0) 70deg,
+    rgba(255, 255, 255, 0) 180deg,
+    rgba(255, 255, 255, 0.15) 215deg,
+    rgba(255, 255, 255, 0) 250deg,
+    rgba(255, 255, 255, 0) 360deg
+  );
 }

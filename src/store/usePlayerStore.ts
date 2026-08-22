@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { TRACKS, Track } from '../lib/trackData';
 import { audioManager } from '../lib/audioManager';
 
-export type ThemeOption = 'obsidian-amber' | 'cyber-emerald' | 'neon-violet' | 'crimson-red' | 'electric-cyan';
+export type ThemeOption = 'vintage-gold' | 'warm-vermilion' | 'electric-teal' | 'neon-violet' | 'cyber-emerald';
 
 interface PlayerState {
   tracks: Track[];
@@ -29,7 +29,7 @@ interface PlayerState {
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
-  // Setup audio ended listener for auto-advance
+  // Auto advance track on audio completion
   audioManager.audio.addEventListener('ended', () => {
     const { repeatMode, isShuffle, currentTrackIndex, tracks } = get();
     if (repeatMode === 'one') {
@@ -53,7 +53,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     isMuted: false,
     repeatMode: 'all',
     isShuffle: false,
-    theme: 'obsidian-amber',
+    theme: 'vintage-gold',
 
     playTrackIndex: (index: number) => {
       const { tracks } = get();
@@ -64,7 +64,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       audioManager.loadTrack(nextTrack);
       audioManager.play();
 
-      // Dynamically apply accent theme if matched
       if (nextTrack.accentColor) {
         document.documentElement.style.setProperty('--accent-color', nextTrack.accentColor);
         document.documentElement.style.setProperty('--accent-glow', `${nextTrack.accentColor}66`);
@@ -109,7 +108,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     previousTrack: () => {
       const { currentTrackIndex, tracks } = get();
-      // If played more than 3 seconds, restart current track
       if (audioManager.currentTimeRef.current > 3) {
         audioManager.seek(0);
         return;
@@ -152,7 +150,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     setTheme: (theme: ThemeOption) => {
       set({ theme });
-      if (theme === 'obsidian-amber') document.documentElement.removeAttribute('data-theme');
+      if (theme === 'vintage-gold') document.documentElement.removeAttribute('data-theme');
       else document.documentElement.setAttribute('data-theme', theme);
     },
   };
