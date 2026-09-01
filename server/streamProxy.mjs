@@ -1,17 +1,16 @@
 import http from 'http';
 import https from 'https';
 import { URL } from 'url';
-import { resolveAudioStreamUrl } from './ytDlpService';
+import { resolveAudioStreamUrl } from './ytDlpService.mjs';
 
 /**
  * Handles GET /api/stream/:videoId
  * Proxies partial content Range requests from the client <audio> element to the upstream audio source
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ * @param {string} videoId
  */
-export async function handleAudioStream(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  videoId: string
-): Promise<void> {
+export async function handleAudioStream(req, res, videoId) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Method not allowed' }));
@@ -23,7 +22,7 @@ export async function handleAudioStream(
     const parsedUrl = new URL(upstreamUrl);
     const clientRange = req.headers['range'];
 
-    const upstreamHeaders: Record<string, string> = {
+    const upstreamHeaders = {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
       Accept: '*/*',
@@ -47,7 +46,7 @@ export async function handleAudioStream(
         // Forward HTTP status (typically 206 Partial Content or 200 OK)
         const statusCode = upstreamRes.statusCode || 200;
 
-        const responseHeaders: Record<string, string | string[] | number | undefined> = {
+        const responseHeaders = {
           'Content-Type': upstreamRes.headers['content-type'] || 'audio/webm',
           'Accept-Ranges': 'bytes',
           'Access-Control-Allow-Origin': '*',
@@ -97,7 +96,7 @@ export async function handleAudioStream(
     });
 
     upstreamReq.end();
-  } catch (err: any) {
+  } catch (err) {
     console.error(`[Audio stream handler error for ${videoId}]:`, err.message);
     if (!res.headersSent) {
       res.writeHead(404, { 'Content-Type': 'application/json' });

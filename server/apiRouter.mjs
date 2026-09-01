@@ -1,15 +1,14 @@
-import http from 'http';
-import { handleAudioStream } from './streamProxy';
-import { handleSearch } from './searchService';
+import { handleAudioStream } from './streamProxy.mjs';
+import { handleSearch } from './searchService.mjs';
 
 /**
  * Dispatches incoming HTTP requests for /api/* endpoints
  * Returns true if the request was handled, false otherwise
+ * @param {import('http').IncomingMessage} req
+ * @param {import('http').ServerResponse} res
+ * @returns {Promise<boolean>}
  */
-export async function handleApiRequest(
-  req: http.IncomingMessage,
-  res: http.ServerResponse
-): Promise<boolean> {
+export async function handleApiRequest(req, res) {
   const url = req.url || '';
 
   // 1. Audio stream proxy: /api/stream/:videoId
@@ -41,12 +40,11 @@ export async function handleApiRequest(
 
 /**
  * Connect/Vite/Express compatible middleware
+ * @param {import('http').IncomingMessage} req
+ * @param {import('http').ServerResponse} res
+ * @param {() => void} [next]
  */
-export function apiMiddleware(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  next?: () => void
-): void {
+export function apiMiddleware(req, res, next) {
   const url = req.url || '';
 
   if (url.startsWith('/api/')) {

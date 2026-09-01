@@ -1,7 +1,7 @@
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { apiMiddleware } from './server/apiRouter';
+import { apiMiddleware } from './server/apiRouter.mjs';
 
 const apiServerPlugin = (): Plugin => ({
   name: 'api-server-plugin',

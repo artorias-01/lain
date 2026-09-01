@@ -1,26 +1,8 @@
-import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
-export interface TrackItem {
-  id: string;
-  videoId: string;
-  title: string;
-  artist: string;
-  album?: string;
-  duration: number; // in seconds
-  thumbnailUrl: string;
-}
-
-export interface SearchResponse {
-  tracks: TrackItem[];
-  hasApiKey: boolean;
-  message?: string;
-  fromCache?: boolean;
-}
-
 // Curated authentic starter queue with verified real YouTube video IDs
-export const STARTER_QUEUE: TrackItem[] = [
+export const STARTER_QUEUE = [
   {
     id: 'yt-FGBhQbmPwH8',
     videoId: 'FGBhQbmPwH8',
@@ -86,7 +68,7 @@ export const STARTER_QUEUE: TrackItem[] = [
   },
 ];
 
-export const parseIsoDuration = (durationStr: string): number => {
+export const parseIsoDuration = (durationStr) => {
   if (!durationStr) return 180;
   const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 180;
@@ -100,17 +82,13 @@ export const parseIsoDuration = (durationStr: string): number => {
 // 2-hour search cache TTL
 const SEARCH_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 
-interface CachedSearchResult {
-  data: SearchResponse;
-  expiresAt: number;
-}
-
-const searchCache = new Map<string, CachedSearchResult>();
+const searchCache = new Map();
 
 /**
  * Reads server-side YOUTUBE_API_KEY from environment or .env file
+ * @returns {string | null}
  */
-function getYouTubeApiKey(): string | null {
+export function getYouTubeApiKey() {
   if (process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_API_KEY !== 'your_youtube_api_key_here') {
     return process.env.YOUTUBE_API_KEY;
   }
@@ -137,8 +115,9 @@ function getYouTubeApiKey(): string | null {
 
 /**
  * Searches YouTube tracks with server-side caching and batching
+ * @param {string} rawQuery
  */
-export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
+export async function searchTracks(rawQuery) {
   const query = (rawQuery || '').trim();
   const normalizedKey = query.toLowerCase();
 
@@ -167,7 +146,7 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
         (t.album && t.album.toLowerCase().includes(normalizedKey))
     );
 
-    const fallbackResult: SearchResponse = {
+    const fallbackResult = {
       tracks: filtered.length > 0 ? filtered : STARTER_QUEUE,
       hasApiKey: false,
       message: filtered.length > 0
@@ -192,10 +171,10 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
       throw new Error(`YouTube search returned HTTP ${searchRes.status}`);
     }
 
-    const searchData: any = await searchRes.json();
+    const searchData = await searchRes.json();
 
     if (!searchData.items || !Array.isArray(searchData.items) || searchData.items.length === 0) {
-      const emptyResult: SearchResponse = {
+      const emptyResult = {
         tracks: [],
         hasApiKey: true,
         message: `No songs found for "${query}".`,
@@ -206,7 +185,7 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
 
     // Batch up to 50 video IDs for videos.list call
     const videoIds = searchData.items
-      .map((item: any) => item.id?.videoId)
+      .map((item) => item.id?.videoId)
       .filter(Boolean)
       .slice(0, 50)
       .join(',');
@@ -222,13 +201,13 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
       throw new Error(`YouTube videos lookup returned HTTP ${detailsRes.status}`);
     }
 
-    const detailsData: any = await detailsRes.json();
+    const detailsData = await detailsRes.json();
     const items = detailsData.items || [];
 
     // Filter embeddable items and map to TrackItem
-    const validTracks: TrackItem[] = items
-      .filter((item: any) => item.status?.embeddable !== false)
-      .map((item: any, idx: number) => {
+    const validTracks = items
+      .filter((item) => item.status?.embeddable !== false)
+      .map((item, idx) => {
         const vid = item.id;
         const snippet = item.snippet || {};
         const contentDetails = item.contentDetails || {};
@@ -249,7 +228,7 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
         };
       });
 
-    const finalResult: SearchResponse = {
+    const finalResult = {
       tracks: validTracks.length > 0 ? validTracks : STARTER_QUEUE,
       hasApiKey: true,
       message: validTracks.length === 0 ? 'All matching results were restricted by content owners.' : undefined,
@@ -262,7 +241,7 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
     });
 
     return finalResult;
-  } catch (err: any) {
+  } catch (err) {
     console.warn(`[Search error for "${query}"]:`, err.message);
 
     // Graceful fallback to starter queue filter
@@ -283,11 +262,7 @@ export async function searchTracks(rawQuery: string): Promise<SearchResponse> {
 /**
  * HTTP handler for GET /api/search?q=...
  */
-export async function handleSearch(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  query: string
-): Promise<void> {
+export async function handleSearch(req, res, query) {
   try {
     const result = await searchTracks(query);
     res.writeHead(200, {
@@ -295,7 +270,7 @@ export async function handleSearch(
       'Cache-Control': 'public, max-age=600',
     });
     res.end(JSON.stringify(result));
-  } catch (err: any) {
+  } catch (err) {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Search failed', message: err.message }));
   }

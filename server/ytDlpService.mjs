@@ -2,21 +2,17 @@ import { execFile } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-interface CachedUrl {
-  url: string;
-  expiresAt: number;
-}
-
 // 4-hour cache TTL (Google Video playback URLs usually expire in 6 hours)
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 
-const resolvedUrlCache = new Map<string, CachedUrl>();
-const inFlightResolutions = new Map<string, Promise<string>>();
+const resolvedUrlCache = new Map();
+const inFlightResolutions = new Map();
 
 /**
  * Finds the yt-dlp executable in local bin/ or system PATH
+ * @returns {string}
  */
-export function findYtDlpBinary(): string {
+export function findYtDlpBinary() {
   const localBinExe = path.resolve(process.cwd(), 'bin', 'yt-dlp.exe');
   if (fs.existsSync(localBinExe)) return localBinExe;
 
@@ -28,9 +24,11 @@ export function findYtDlpBinary(): string {
 
 /**
  * Resolves a direct Google Video audio stream URL for a given YouTube video ID
+ * @param {string} videoId
+ * @returns {Promise<string>}
  */
-export async function resolveAudioStreamUrl(videoId: string): Promise<string> {
-  const cleanId = videoId.trim();
+export async function resolveAudioStreamUrl(videoId) {
+  const cleanId = (videoId || '').trim();
   if (!cleanId || !/^[\w-]{6,15}$/.test(cleanId)) {
     throw new Error(`Invalid video ID: ${videoId}`);
   }
@@ -51,7 +49,7 @@ export async function resolveAudioStreamUrl(videoId: string): Promise<string> {
   const ytDlpPath = findYtDlpBinary();
   const targetUrl = `https://www.youtube.com/watch?v=${cleanId}`;
 
-  const resolutionPromise = new Promise<string>((resolve, reject) => {
+  const resolutionPromise = new Promise((resolve, reject) => {
     // -f bestaudio -g returns the direct media stream URL
     const args = ['-f', 'bestaudio', '-g', targetUrl];
 

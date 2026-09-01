@@ -2,7 +2,6 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { handleApiRequest } from './apiRouter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,35 +21,60 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2',
 };
 
-const server = http.createServer(async (req, res) => {
-  // 1. Check API endpoints first
-  if (req.url && req.url.startsWith('/api/')) {
-    const handled = await handleApiRequest(req, res);
-    if (handled) return;
+async function startServer() {
+  try {
+    const { handleApiRequest } = await import('./apiRouter.mjs');
+
+    const server = http.createServer(async (req, res) => {
+      // 1. Check API endpoints first
+      if (req.url && req.url.startsWith('/api/')) {
+        try {
+          const handled = await handleApiRequest(req, res);
+          if (handled) return;
+        } catch (apiErr) {
+          console.error('[API Error]:', apiErr);
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Internal server error', details: apiErr.message }));
+          }
+          return;
+        }
+      }
+
+      // 2. Serve static production build files if dist/ exists
+      if (fs.existsSync(DIST_DIR)) {
+        const parsedPath = (req.url || '/').split('?')[0];
+        let filePath = path.join(DIST_DIR, parsedPath === '/' ? 'index.html' : parsedPath);
+
+        if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+          filePath = path.join(DIST_DIR, 'index.html');
+        }
+
+        if (fs.existsSync(filePath)) {
+          const ext = path.extname(filePath);
+          const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+          res.writeHead(200, { 'Content-Type': contentType });
+          fs.createReadStream(filePath).pipe(res);
+          return;
+        }
+      }
+
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not Found');
+    });
+
+    server.on('error', (err) => {
+      console.error('[FATAL] Server runtime error:', err);
+      process.exit(1);
+    });
+
+    server.listen(PORT, () => {
+      console.log(`[Production Server] Listening on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error('[FATAL] Server failed to start:', err);
+    process.exit(1);
   }
+}
 
-  // 2. Serve static production build files if dist/ exists
-  if (fs.existsSync(DIST_DIR)) {
-    const parsedPath = (req.url || '/').split('?')[0];
-    let filePath = path.join(DIST_DIR, parsedPath === '/' ? 'index.html' : parsedPath);
-
-    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-      filePath = path.join(DIST_DIR, 'index.html');
-    }
-
-    if (fs.existsSync(filePath)) {
-      const ext = path.extname(filePath);
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': contentType });
-      fs.createReadStream(filePath).pipe(res);
-      return;
-    }
-  }
-
-  res.writeHead(404, { 'Content-Type': 'text/plain' });
-  res.end('Not Found');
-});
-
-server.listen(PORT, () => {
-  console.log(`[Production Server] Listening on http://localhost:${PORT}`);
-});
+startServer();
