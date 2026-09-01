@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { youtubeEngine, TrackItem, PlayerEventType } from '../lib/youtubePlayer';
+import { nativeAudioEngine, TrackItem, PlayerEventType } from '../lib/nativeAudioEngine';
 import { STARTER_QUEUE, searchYouTubeTracks } from '../lib/youtubeSearch';
 
 interface PlayerState {
@@ -12,7 +12,7 @@ interface PlayerState {
   repeatMode: 'none' | 'one' | 'all';
   isShuffle: boolean;
 
-  // Search & Error State
+  // Search & Status
   searchQuery: string;
   searchResults: TrackItem[];
   isSearching: boolean;
@@ -38,8 +38,8 @@ interface PlayerState {
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => {
-  // Subscribe to YouTube audio engine events
-  youtubeEngine.subscribe((event: PlayerEventType, errorCode?: number) => {
+  // Subscribe to native audio engine state events
+  nativeAudioEngine.subscribe((event: PlayerEventType, errorCode?: number) => {
     if (event === 'playing') {
       set({ isPlaying: true, trackErrorMessage: null });
     } else if (event === 'paused') {
@@ -47,8 +47,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     } else if (event === 'ended') {
       const { repeatMode, isShuffle, currentTrackIndex, queue } = get();
       if (repeatMode === 'one') {
-        youtubeEngine.seekTo(0);
-        youtubeEngine.play();
+        nativeAudioEngine.seekTo(0);
+        nativeAudioEngine.play();
       } else if (isShuffle) {
         const randomIndex = Math.floor(Math.random() * queue.length);
         get().playTrackIndex(randomIndex);
@@ -58,12 +58,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         set({ isPlaying: false });
       }
     } else if (event === 'error') {
-      console.warn('YouTube Player error encountered, skipping track. Code:', errorCode);
+      console.warn('[Audio Engine error, skipping track]:', errorCode);
       set({
         isPlaying: false,
-        trackErrorMessage: `Track unavailable for playback (Code ${errorCode || 'embed-disabled'}) — skipping to next.`,
+        trackErrorMessage: 'Track unavailable, skipping to next track...',
       });
-      // Auto-advance to next track after brief delay so user isn't stuck
+      // Auto-advance so the listener isn't stuck
       setTimeout(() => {
         get().nextTrack();
       }, 1200);
@@ -77,7 +77,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     currentTrackIndex: 0,
     activeTrack: defaultTrack,
     isPlaying: false,
-    volume: 0.8,
+    volume: 0.85,
     isMuted: false,
     repeatMode: 'all',
     isShuffle: false,
@@ -94,8 +94,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
       if (index < 0 || index >= queue.length) return;
 
       const nextTrack = queue[index];
-      set({ currentTrackIndex: index, activeTrack: nextTrack, isPlaying: true, trackErrorMessage: null });
-      youtubeEngine.loadVideoById(nextTrack.videoId, true);
+      set({
+        currentTrackIndex: index,
+        activeTrack: nextTrack,
+        isPlaying: true,
+        trackErrorMessage: null,
+      });
+      nativeAudioEngine.loadVideoById(nextTrack.videoId, true);
     },
 
     playTrack: (track: TrackItem) => {
@@ -116,31 +121,31 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
         trackErrorMessage: null,
       });
 
-      youtubeEngine.loadVideoById(track.videoId, true);
+      nativeAudioEngine.loadVideoById(track.videoId, true);
     },
 
     togglePlay: () => {
       const { isPlaying, activeTrack } = get();
       if (isPlaying) {
-        youtubeEngine.pause();
+        nativeAudioEngine.pause();
         set({ isPlaying: false });
       } else {
-        if (!youtubeEngine.currentTimeRef.current) {
-          youtubeEngine.loadVideoById(activeTrack.videoId, true);
+        if (!nativeAudioEngine.currentTimeRef.current) {
+          nativeAudioEngine.loadVideoById(activeTrack.videoId, true);
         } else {
-          youtubeEngine.play();
+          nativeAudioEngine.play();
         }
         set({ isPlaying: true });
       }
     },
 
     play: () => {
-      youtubeEngine.play();
+      nativeAudioEngine.play();
       set({ isPlaying: true });
     },
 
     pause: () => {
-      youtubeEngine.pause();
+      nativeAudioEngine.pause();
       set({ isPlaying: false });
     },
 
@@ -157,8 +162,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     previousTrack: () => {
       const { currentTrackIndex, queue } = get();
-      if (youtubeEngine.currentTimeRef.current > 3) {
-        youtubeEngine.seekTo(0);
+      if (nativeAudioEngine.currentTimeRef.current > 3) {
+        nativeAudioEngine.seekTo(0);
         return;
       }
       let prevIndex = currentTrackIndex - 1;
@@ -170,17 +175,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
 
     setVolume: (val: number) => {
       const cleanVal = Math.max(0, Math.min(1, val));
-      youtubeEngine.setVolume(cleanVal);
+      nativeAudioEngine.setVolume(cleanVal);
       set({ volume: cleanVal, isMuted: cleanVal === 0 });
     },
 
     toggleMute: () => {
       const { isMuted, volume } = get();
       if (isMuted) {
-        youtubeEngine.setVolume(volume || 0.8);
+        nativeAudioEngine.setVolume(volume || 0.85);
         set({ isMuted: false });
       } else {
-        youtubeEngine.setVolume(0);
+        nativeAudioEngine.setVolume(0);
         set({ isMuted: true });
       }
     },

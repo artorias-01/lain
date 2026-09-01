@@ -3,73 +3,40 @@
 @tailwind utilities;
 
 :root {
-  /* Theme: Vintage Champagne Gold (Default Editorial Palette) */
-  --bg-primary: #0b0c10;
-  --bg-elevated: #12141c;
-  --bg-card: #191b26;
-  --bg-surface: #202330;
-
-  --accent-color: #d4af37;
-  --accent-hover: #e5c158;
-  --accent-glow: rgba(212, 175, 55, 0.4);
-  --accent-dim: rgba(212, 175, 55, 0.12);
-
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-
-  --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Japanese Jazz Kissa / Analog Archival Minimal Palette */
+  --bg-lacquer: #0E0D0B;
+  --bg-substrate: #171614;
+  --color-ochre: #C89D5C;
+  --color-ochre-hover: #DAB577;
+  --color-ochre-dim: rgba(200, 157, 92, 0.15);
+  --text-paper: #F3EDE2;
+  --text-paper-dim: rgba(243, 237, 226, 0.75);
+  --text-kraft: #8C8275;
+  --border-scribe: #26231F;
+  --border-scribe-subtle: #1C1A17;
 }
 
-/* Dynamic Editorial Theme Options */
-[data-theme="warm-vermilion"] {
-  --accent-color: #ff5733;
-  --accent-hover: #ff7757;
-  --accent-glow: rgba(255, 87, 51, 0.4);
-  --accent-dim: rgba(255, 87, 51, 0.12);
+/* Tabular numbers for aligned timestamps and track indices */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-[data-theme="electric-teal"] {
-  --accent-color: #00e5ff;
-  --accent-hover: #54efff;
-  --accent-glow: rgba(0, 229, 255, 0.4);
-  --accent-dim: rgba(0, 229, 255, 0.12);
-}
-
-[data-theme="neon-violet"] {
-  --accent-color: #a855f7;
-  --accent-hover: #c084fc;
-  --accent-glow: rgba(168, 85, 247, 0.4);
-  --accent-dim: rgba(168, 85, 247, 0.12);
-}
-
-[data-theme="cyber-emerald"] {
-  --accent-color: #00ff9d;
-  --accent-hover: #4dffb8;
-  --accent-glow: rgba(0, 255, 157, 0.4);
-  --accent-dim: rgba(0, 255, 157, 0.12);
-}
-
-/* Custom Scrollbar */
+/* Minimalist Archival Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg-lacquer);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  background: var(--border-scribe);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color);
+  background: var(--color-ochre);
 }
 
-/* Range input slider styling */
+/* Unadorned Range Slider */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -78,73 +45,58 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
+  height: 2px;
+  background: var(--border-scribe);
+  border-radius: 1px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 14px;
-  width: 14px;
+  height: 10px;
+  width: 10px;
   border-radius: 50%;
-  background: var(--accent-color);
-  box-shadow: 0 0 10px var(--accent-glow);
-  margin-top: -5px;
-  transition: transform 0.15s ease, background 0.15s ease;
+  background: var(--text-paper);
+  margin-top: -4px;
+  transition: transform 0.1s ease, background 0.1s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
+  transform: scale(1.2);
+  background: var(--color-ochre);
 }
 
-/* Editorial Glassmorphic Panels */
-.glass-panel {
-  background: rgba(18, 20, 28, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-color);
-}
-
-.glass-panel-glow {
-  background: rgba(25, 27, 38, 0.8);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.6), 0 0 30px -5px var(--accent-dim);
-}
-
-/* Concentric vinyl groove background pattern */
+/* Concentric micro-groove vinyl pattern */
 .vinyl-grooves-pattern {
-  background: radial-gradient(circle, 
-    #111218 0%, 
-    #111218 20%, 
-    #0a0b0e 21%, 
-    #181a24 22%, 
-    #0a0b0e 25%, 
-    #151722 26%, 
-    #0d0e14 32%, 
-    #1c1e2b 33%, 
-    #0d0e14 45%, 
-    #191b26 46%, 
-    #090a0d 60%, 
-    #161822 61%, 
-    #08090c 75%, 
-    #12141c 76%, 
-    #050608 100%
+  background: radial-gradient(circle,
+    #141310 0%,
+    #141310 18%,
+    #0d0c0a 19%,
+    #1b1916 20%,
+    #0b0a08 23%,
+    #181613 24%,
+    #0c0b09 30%,
+    #1e1c18 31%,
+    #0c0b09 42%,
+    #1a1814 43%,
+    #0a0908 58%,
+    #171512 59%,
+    #080706 72%,
+    #151310 73%,
+    #050504 100%
   );
 }
 
-/* Specular sweep reflection overlay */
+/* Anisotropic specular glare sweep */
 .vinyl-glare-overlay {
   background: conic-gradient(
-    from 45deg,
+    from 40deg,
     rgba(255, 255, 255, 0) 0deg,
-    rgba(255, 255, 255, 0.15) 35deg,
-    rgba(255, 255, 255, 0) 70deg,
+    rgba(255, 255, 255, 0.12) 30deg,
+    rgba(255, 255, 255, 0) 65deg,
     rgba(255, 255, 255, 0) 180deg,
-    rgba(255, 255, 255, 0.15) 215deg,
-    rgba(255, 255, 255, 0) 250deg,
+    rgba(255, 255, 255, 0.12) 210deg,
+    rgba(255, 255, 255, 0) 245deg,
     rgba(255, 255, 255, 0) 360deg
   );
 }

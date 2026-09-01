@@ -1,177 +1,114 @@
-import { TrackItem } from './youtubePlayer';
-
-/**
- * Parses ISO 8601 duration string (e.g. PT3M42S, PT1H2M5S, PT45S) to seconds
- */
-export const parseIsoDuration = (durationStr: string): number => {
-  if (!durationStr) return 180;
-  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 180;
-  const hours = parseInt(match[1] || '0', 10);
-  const minutes = parseInt(match[2] || '0', 10);
-  const seconds = parseInt(match[3] || '0', 10);
-  const total = hours * 3600 + minutes * 60 + seconds;
-  return total > 0 ? total : 180;
-};
-
-export const STARTER_QUEUE: TrackItem[] = [
-  {
-    id: 'yt-1',
-    videoId: 'jfKfPfyJRdk',
-    title: 'Lofi Hip Hop Radio - Beats to Relax/Study to',
-    artist: 'Lofi Girl',
-    album: 'Live Chill Sessions',
-    duration: 300,
-    thumbnailUrl: 'https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg',
-  },
-  {
-    id: 'yt-2',
-    videoId: 'FGBhQbmPwH8',
-    title: 'One More Time',
-    artist: 'Daft Punk',
-    album: 'Discovery',
-    duration: 320,
-    thumbnailUrl: 'https://img.youtube.com/vi/FGBhQbmPwH8/hqdefault.jpg',
-  },
-  {
-    id: 'yt-3',
-    videoId: 'RxabA9bt8sE',
-    title: 'Nocturne Op. 9 No. 2 in E-Flat Major',
-    artist: 'Frédéric Chopin',
-    album: 'Classical Masterpieces',
-    duration: 275,
-    thumbnailUrl: 'https://img.youtube.com/vi/RxabA9bt8sE/hqdefault.jpg',
-  },
-  {
-    id: 'yt-4',
-    videoId: 'Rx91g6w2zXk',
-    title: 'Time (Official Soundtrack)',
-    artist: 'Hans Zimmer',
-    album: 'Inception OST',
-    duration: 275,
-    thumbnailUrl: 'https://img.youtube.com/vi/Rx91g6w2zXk/hqdefault.jpg',
-  },
-  {
-    id: 'yt-5',
-    videoId: '4xDzrJKXOOY',
-    title: 'Synthwave Radio - Cyberpunk Retrowave',
-    artist: 'Lofi Pulse',
-    album: 'Neon Nights',
-    duration: 240,
-    thumbnailUrl: 'https://img.youtube.com/vi/4xDzrJKXOOY/hqdefault.jpg',
-  },
-];
+import { TrackItem } from './nativeAudioEngine';
 
 export interface SearchResponse {
   tracks: TrackItem[];
   hasApiKey: boolean;
   message?: string;
+  fromCache?: boolean;
 }
 
+// Curated authentic starter queue with verified YouTube IDs
+export const STARTER_QUEUE: TrackItem[] = [
+  {
+    id: 'yt-FGBhQbmPwH8',
+    videoId: 'FGBhQbmPwH8',
+    title: 'One More Time',
+    artist: 'Daft Punk',
+    album: 'Discovery (2001)',
+    duration: 320,
+    thumbnailUrl: 'https://img.youtube.com/vi/FGBhQbmPwH8/hqdefault.jpg',
+  },
+  {
+    id: 'yt-F5EFsUU7RRA',
+    videoId: 'F5EFsUU7RRA',
+    title: 'Early Summer',
+    artist: 'Ryo Fukui',
+    album: 'Scenery (1976)',
+    duration: 644,
+    thumbnailUrl: 'https://img.youtube.com/vi/F5EFsUU7RRA/hqdefault.jpg',
+  },
+  {
+    id: 'yt-zqNTltOGh5c',
+    videoId: 'zqNTltOGh5c',
+    title: 'So What',
+    artist: 'Miles Davis',
+    album: 'Kind of Blue (1959)',
+    duration: 562,
+    thumbnailUrl: 'https://img.youtube.com/vi/zqNTltOGh5c/hqdefault.jpg',
+  },
+  {
+    id: 'yt-r-Z8KuwI7Gc',
+    videoId: 'r-Z8KuwI7Gc',
+    title: 'Autumn Leaves',
+    artist: 'Bill Evans Trio',
+    album: 'Portrait in Jazz (1960)',
+    duration: 361,
+    thumbnailUrl: 'https://img.youtube.com/vi/r-Z8KuwI7Gc/hqdefault.jpg',
+  },
+  {
+    id: 'yt-p29JUpsOSTE',
+    videoId: 'p29JUpsOSTE',
+    title: 'Nocturne in E Flat Major (Op. 9 No. 2)',
+    artist: 'Frédéric Chopin',
+    album: 'Classical Masterpieces',
+    duration: 296,
+    thumbnailUrl: 'https://img.youtube.com/vi/p29JUpsOSTE/hqdefault.jpg',
+  },
+  {
+    id: 'yt-c56t7upa8Bk',
+    videoId: 'c56t7upa8Bk',
+    title: 'Time (Official Audio)',
+    artist: 'Hans Zimmer',
+    album: 'Inception OST',
+    duration: 276,
+    thumbnailUrl: 'https://img.youtube.com/vi/c56t7upa8Bk/hqdefault.jpg',
+  },
+  {
+    id: 'yt-5qap5aO4i9A',
+    videoId: '5qap5aO4i9A',
+    title: 'Lofi Hip Hop Radio - Beats to Relax/Study to',
+    artist: 'Lofi Girl',
+    album: 'Chill Beats',
+    duration: 300,
+    thumbnailUrl: 'https://img.youtube.com/vi/5qap5aO4i9A/hqdefault.jpg',
+  },
+];
+
 /**
- * Searches YouTube Data API v3, filters out non-embeddable videos, and fetches real ISO 8601 durations
+ * Searches YouTube tracks via the backend /api/search endpoint with server-side caching
  */
 export const searchYouTubeTracks = async (query: string): Promise<SearchResponse> => {
-  const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+  const cleanQuery = (query || '').trim();
 
-  if (!apiKey || apiKey === 'your_youtube_api_key_here') {
-    if (query && query.trim()) {
-      const q = query.toLowerCase();
-      const filtered = STARTER_QUEUE.filter(
-        (t) => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q)
-      );
-      return {
-        tracks: filtered.length > 0 ? filtered : STARTER_QUEUE,
-        hasApiKey: false,
-        message: 'No VITE_YOUTUBE_API_KEY set in .env. Showing pre-resolved starter queue.',
-      };
-    }
-    return {
-      tracks: STARTER_QUEUE,
-      hasApiKey: false,
-      message: 'No VITE_YOUTUBE_API_KEY set in .env. Showing pre-resolved starter queue.',
-    };
-  }
-
-  if (!query || !query.trim()) {
+  if (!cleanQuery) {
     return { tracks: STARTER_QUEUE, hasApiKey: true };
   }
 
   try {
-    const encodedQuery = encodeURIComponent(`${query.trim()} music`);
-    // Step 1: Initial search list call
-    const searchRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=15&q=${encodedQuery}&key=${apiKey}`
-    );
+    const res = await fetch(`/api/search?q=${encodeURIComponent(cleanQuery)}`);
 
-    if (!searchRes.ok) {
-      if (searchRes.status === 403) {
-        throw new Error('Google Cloud YouTube API Quota Exceeded (403 quotaExceeded). Please check your API key quota limits.');
-      }
-      throw new Error(`YouTube Search returned HTTP ${searchRes.status}`);
+    if (!res.ok) {
+      throw new Error(`Search request failed (${res.status})`);
     }
 
-    const searchData = await searchRes.json();
-
-    if (!searchData.items || !Array.isArray(searchData.items) || searchData.items.length === 0) {
-      return { tracks: STARTER_QUEUE, hasApiKey: true, message: 'No search results found.' };
-    }
-
-    const videoIds = searchData.items.map((item: any) => item.id.videoId).filter(Boolean).join(',');
-
-    if (!videoIds) {
-      return { tracks: STARTER_QUEUE, hasApiKey: true };
-    }
-
-    // Step 2: Fetch detailed metadata (embeddable status & ISO 8601 duration) via videos.list
-    const detailsRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status,snippet&id=${videoIds}&key=${apiKey}`
-    );
-
-    if (!detailsRes.ok) {
-      throw new Error(`YouTube Videos API returned HTTP ${detailsRes.status}`);
-    }
-
-    const detailsData = await detailsRes.json();
-
-    if (!detailsData.items || !Array.isArray(detailsData.items)) {
-      return { tracks: STARTER_QUEUE, hasApiKey: true };
-    }
-
-    // Filter OUT any track where status.embeddable === false
-    const validItems = detailsData.items.filter((item: any) => {
-      return item.status && item.status.embeddable !== false;
-    });
-
-    const tracks: TrackItem[] = validItems.map((item: any, idx: number) => {
-      const videoId = item.id;
-      const snippet = item.snippet || {};
-      const contentDetails = item.contentDetails || {};
-
-      const durationSeconds = parseIsoDuration(contentDetails.duration);
-      const thumbnailUrl = snippet.thumbnails?.high?.url || snippet.thumbnails?.medium?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-
-      return {
-        id: `yt-${videoId}-${idx}`,
-        videoId,
-        title: snippet.title || 'Untitled Track',
-        artist: snippet.channelTitle || 'YouTube Artist',
-        duration: durationSeconds,
-        thumbnailUrl,
-      };
-    });
-
-    return {
-      tracks: tracks.length > 0 ? tracks : STARTER_QUEUE,
-      hasApiKey: true,
-      message: tracks.length === 0 ? 'All search results had embedding disabled by rights holders.' : undefined,
-    };
+    const data: SearchResponse = await res.json();
+    return data;
   } catch (err: any) {
-    console.warn('YouTube search fetch error:', err);
+    console.warn('[Search fetch error]:', err.message);
+
+    // Filter starter queue on network failure
+    const q = cleanQuery.toLowerCase();
+    const fallback = STARTER_QUEUE.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.artist.toLowerCase().includes(q) ||
+        (t.album && t.album.toLowerCase().includes(q))
+    );
+
     return {
-      tracks: STARTER_QUEUE,
-      hasApiKey: true,
-      message: err.message || 'YouTube Search request failed. Showing starter queue.',
+      tracks: fallback.length > 0 ? fallback : STARTER_QUEUE,
+      hasApiKey: false,
+      message: 'Server search offline. Showing matched starter tracks.',
     };
   }
 };

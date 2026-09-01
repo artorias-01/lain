@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
-import { TrackItem } from '../../lib/youtubePlayer';
-import { Search, Play, Pause, AlertCircle, Music } from 'lucide-react';
+import { TrackItem } from '../../lib/nativeAudioEngine';
+import { Search, Play, Pause, X } from 'lucide-react';
 
 export const MainTrackView: React.FC = () => {
   const {
@@ -15,15 +15,34 @@ export const MainTrackView: React.FC = () => {
     isSearching,
     apiKeyMissing,
     searchMessage,
+    trackErrorMessage,
   } = usePlayerStore();
 
   const [inputVal, setInputVal] = useState(searchQuery);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputVal.trim()) {
-      setSearchQuery(inputVal.trim());
+  // Debounce search input by 450ms
+  useEffect(() => {
+    if (inputVal === searchQuery) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchQuery(inputVal.trim());
+    }, 450);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [inputVal, searchQuery, setSearchQuery]);
+
+  const handleClearSearch = () => {
+    setInputVal('');
+    setSearchQuery('');
   };
 
   const formatDuration = (secs: number): string => {
@@ -42,97 +61,151 @@ export const MainTrackView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 pb-28 select-none">
-      {/* App Header */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
-        <h1 className="font-sans font-extrabold text-2xl tracking-wider text-white">
-          AURA
-        </h1>
-        <span className="text-xs text-gray-500 font-sans">Spotify Hi-Fi Player</span>
-      </div>
+    <main className="max-w-3xl mx-auto px-6 pt-12 pb-36 select-none">
+      {/* Masthead Header: Asymmetric, confident, left-aligned */}
+      <header className="mb-10 pb-6 border-b border-scribe flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
+        <div>
+          <h1 className="font-display font-extrabold text-3xl tracking-tight text-paper">
+            AURA
+          </h1>
+          <p className="font-sans text-xs text-kraft mt-1 tracking-normal">
+            Analog listening session • High-fidelity audio stream
+          </p>
+        </div>
+        <div className="font-sans text-xs tabular-nums text-kraft/80 self-start sm:self-auto">
+          {searchResults.length} {searchResults.length === 1 ? 'recording' : 'recordings'}
+        </div>
+      </header>
 
-      {/* Minimal Plain Search Input */}
-      <form onSubmit={handleSearchSubmit} className="mb-8">
-        <div className="relative flex items-center">
-          <Search className="absolute left-4 w-4 h-4 text-gray-400 pointer-events-none" />
+      {/* Direct Search Bar: Plain, architectural, no rounded pill chrome */}
+      <section className="mb-10">
+        <div className="relative flex items-center border-b border-scribe focus-within:border-ochre transition-colors pb-2">
+          <Search className="w-4 h-4 text-kraft flex-shrink-0 mr-3 pointer-events-none" />
           <input
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Search for any song or artist..."
-            className="w-full pl-11 pr-24 py-3 rounded-xl bg-[#181818] border border-white/10 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-white/30 transition-colors"
+            placeholder="Search by title, artist, or album..."
+            className="w-full bg-transparent text-paper placeholder:text-kraft/60 text-sm font-sans focus:outline-none"
           />
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="absolute right-2 px-4 py-1.5 rounded-lg bg-white text-black font-sans font-semibold text-xs hover:bg-gray-200 transition-colors disabled:opacity-50"
-          >
-            {isSearching ? 'Searching...' : 'Search'}
-          </button>
+          {inputVal && (
+            <button
+              onClick={handleClearSearch}
+              className="text-kraft hover:text-paper transition-colors p-1"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {isSearching && (
+            <span className="font-sans text-[11px] tabular-nums text-ochre ml-2 animate-pulse flex-shrink-0">
+              Locating...
+            </span>
+          )}
         </div>
 
-        {/* API Warning or Quota Message */}
-        {(apiKeyMissing || searchMessage) && (
-          <div className="mt-3 p-3 rounded-lg bg-[#1e1e1e] border border-white/10 text-amber-300 text-xs font-sans flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{searchMessage || 'No VITE_YOUTUBE_API_KEY set in .env. Showing pre-resolved starter queue.'}</span>
+        {/* Informative server notice in direct interface voice */}
+        {searchMessage && (
+          <p className="mt-2 text-xs text-kraft leading-relaxed font-sans">
+            {searchMessage}
+          </p>
+        )}
+
+        {trackErrorMessage && (
+          <p className="mt-2 text-xs text-ochre leading-relaxed font-sans">
+            {trackErrorMessage}
+          </p>
+        )}
+      </section>
+
+      {/* Ledger Column Headings: Real structural header, not decorative eyebrow */}
+      <section>
+        <div className="grid grid-cols-[36px_1fr_60px] sm:grid-cols-[44px_1fr_80px] items-center text-xs font-sans text-kraft border-b border-scribe pb-2 mb-1 px-3">
+          <span className="tabular-nums">#</span>
+          <span>Composition</span>
+          <span className="text-right tabular-nums">Length</span>
+        </div>
+
+        {/* Archival Ledger Rows */}
+        {searchResults.length === 0 ? (
+          <div className="py-16 text-center text-kraft font-sans text-sm">
+            <p>No recordings match your search.</p>
+            <p className="text-xs text-kraft/70 mt-1">Try querying a different title or clearing the filter.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-scribe/40">
+            {searchResults.map((track, idx) => {
+              const isActive = activeTrack.videoId === track.videoId;
+              const isRowPlaying = isActive && isPlaying;
+              const trackNum = (idx + 1).toString().padStart(2, '0');
+
+              return (
+                <div
+                  key={track.id || track.videoId}
+                  onClick={() => handleTrackClick(track)}
+                  className={`group grid grid-cols-[36px_1fr_60px] sm:grid-cols-[44px_1fr_80px] items-center px-3 py-3.5 cursor-pointer transition-colors ${
+                    isActive
+                      ? 'bg-substrate text-paper'
+                      : 'hover:bg-substrate/60 text-paper/90'
+                  }`}
+                >
+                  {/* Column 1: Aligned Track Index or Play State */}
+                  <div className="flex items-center">
+                    <span className="font-sans font-medium text-xs tabular-nums text-kraft flex items-center justify-center w-5">
+                      {isRowPlaying ? (
+                        <span className="flex items-center gap-[2px] h-3.5">
+                          <span className="w-[2px] h-2 bg-ochre animate-pulse" />
+                          <span className="w-[2px] h-3.5 bg-ochre animate-pulse delay-75" />
+                          <span className="w-[2px] h-2.5 bg-ochre animate-pulse delay-150" />
+                        </span>
+                      ) : (
+                        <span className="group-hover:hidden">{trackNum}</span>
+                      )}
+                      <Play
+                        className={`w-3.5 h-3.5 text-ochre fill-current ${
+                          isRowPlaying ? 'hidden' : 'hidden group-hover:block'
+                        }`}
+                      />
+                    </span>
+                  </div>
+
+                  {/* Column 2: Artwork Disc + Title & Artist */}
+                  <div className="flex items-center gap-3.5 min-w-0 pr-4">
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden bg-lacquer border border-scribe flex-shrink-0">
+                      <img
+                        src={track.thumbnailUrl}
+                        alt=""
+                        className="w-full h-full object-cover rounded-full"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 rounded-full border border-black/20" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className={`font-display font-semibold text-sm truncate tracking-tight ${
+                          isActive ? 'text-ochre' : 'text-paper group-hover:text-ochre transition-colors'
+                        }`}
+                      >
+                        {track.title}
+                      </h3>
+                      <p className="font-sans text-xs text-kraft truncate mt-0.5">
+                        {track.artist}
+                        {track.album && <span className="opacity-60"> — {track.album}</span>}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Column 3: Tabular Duration */}
+                  <div className="text-right font-sans font-medium text-xs tabular-nums text-kraft group-hover:text-paper transition-colors">
+                    {formatDuration(track.duration)}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-      </form>
-
-      {/* Track List Section Header */}
-      <div className="flex items-center justify-between mb-4 px-2 text-xs font-sans text-gray-400 uppercase tracking-wider">
-        <span># Title & Artist</span>
-        <span>Duration</span>
-      </div>
-
-      {/* Single Column Track Rows (Spotify Style) */}
-      <div className="space-y-1">
-        {searchResults.map((track, idx) => {
-          const isActive = activeTrack.videoId === track.videoId;
-          const isRowPlaying = isActive && isPlaying;
-
-          return (
-            <div
-              key={track.id || track.videoId}
-              onClick={() => handleTrackClick(track)}
-              className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                isActive ? 'bg-[#282828] text-white' : 'hover:bg-[#1a1a1a] text-gray-300'
-              }`}
-            >
-              {/* Left Column: Row Index / Play Icon + Thumbnail + Title/Artist */}
-              <div className="flex items-center gap-4 min-w-0 flex-1">
-                <span className="w-5 text-center text-xs font-mono text-gray-500 flex justify-center items-center flex-shrink-0">
-                  {isRowPlaying ? (
-                    <Play className="w-3.5 h-3.5 text-white fill-current animate-pulse" />
-                  ) : (
-                    <span className="group-hover:hidden">{idx + 1}</span>
-                  )}
-                  <Play className={`w-3.5 h-3.5 text-white fill-current ${isRowPlaying ? 'hidden' : 'hidden group-hover:block'}`} />
-                </span>
-
-                {/* Thumbnail */}
-                <div className="w-10 h-10 rounded overflow-hidden bg-gray-800 flex-shrink-0 border border-white/5">
-                  <img src={track.thumbnailUrl} alt={track.title} className="w-full h-full object-cover" />
-                </div>
-
-                {/* Track Metadata */}
-                <div className="min-w-0 flex-1">
-                  <h3 className={`font-sans font-semibold text-sm truncate ${isActive ? 'text-white' : 'text-gray-200 group-hover:text-white'}`}>
-                    {track.title}
-                  </h3>
-                  <p className="text-xs text-gray-400 truncate">{track.artist}</p>
-                </div>
-              </div>
-
-              {/* Right Column: Duration */}
-              <div className="pl-4 flex-shrink-0 text-xs font-mono text-gray-400">
-                {formatDuration(track.duration)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };

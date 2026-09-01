@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MainTrackView } from './components/Player/MainTrackView';
 import { SpotifyPlayerBar } from './components/Player/SpotifyPlayerBar';
+import { initLenisInstance } from './lib/lenis';
 
 export const App: React.FC = () => {
+  useEffect(() => {
+    // Initialize Lenis smooth scroll synced to GSAP ticker
+    const lenis = initLenisInstance();
+    return () => {
+      lenis?.destroy();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#121212] text-gray-100 font-sans relative selection:bg-white selection:text-black">
-      {/* Main Track List & Search View */}
+    <div className="min-h-screen bg-lacquer text-paper font-sans selection:bg-ochre selection:text-lacquer relative">
+      {/* Editorial Catalog View */}
       <MainTrackView />
 
-      {/* Fixed Spotify Now-Playing Bottom Player Bar */}
+      {/* Fixed Flush-Rule Now-Playing Bar */}
       <SpotifyPlayerBar />
     </div>
   );

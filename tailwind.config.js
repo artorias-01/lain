@@ -7,35 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: {
-          primary: 'var(--bg-primary)',
-          elevated: 'var(--bg-elevated)',
-          card: 'var(--bg-card)',
-          surface: 'var(--bg-surface)',
+        lacquer: '#0E0D0B',
+        substrate: '#171614',
+        ochre: {
+          DEFAULT: '#C89D5C',
+          hover: '#DAB577',
+          dim: 'rgba(200, 157, 92, 0.15)',
         },
-        accent: {
-          DEFAULT: 'var(--accent-color)',
-          hover: 'var(--accent-hover)',
-          glow: 'var(--accent-glow)',
-          dim: 'var(--accent-dim)',
+        paper: {
+          DEFAULT: '#F3EDE2',
+          dim: 'rgba(243, 237, 226, 0.75)',
         },
-        text: {
-          primary: 'var(--text-primary)',
-          secondary: 'var(--text-secondary)',
-          muted: 'var(--text-muted)',
+        kraft: {
+          DEFAULT: '#8C8275',
+          dark: '#544E45',
         },
-        border: {
-          DEFAULT: 'var(--border-color)',
-          subtle: 'var(--border-subtle)',
-        }
+        scribe: {
+          DEFAULT: '#26231F',
+          subtle: '#1C1A17',
+        },
       },
       fontFamily: {
-        display: ['Syne', 'Space Grotesk', 'sans-serif'],
-        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['Syne', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
       },
       animation: {
-        'spin-slow': 'spin 14s linear infinite',
+        'spin-disc': 'spin 3.5s linear infinite',
       },
     },
   },
