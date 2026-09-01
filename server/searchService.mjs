@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { getYtDlpClient } from './ytDlpService.mjs';
 
 // Curated authentic starter queue with verified real YouTube video IDs
 export const STARTER_QUEUE = [
@@ -68,53 +67,13 @@ export const STARTER_QUEUE = [
   },
 ];
 
-export const parseIsoDuration = (durationStr) => {
-  if (!durationStr) return 180;
-  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!match) return 180;
-  const hours = parseInt(match[1] || '0', 10);
-  const minutes = parseInt(match[2] || '0', 10);
-  const seconds = parseInt(match[3] || '0', 10);
-  const total = hours * 3600 + minutes * 60 + seconds;
-  return total > 0 ? total : 180;
-};
-
 // 2-hour search cache TTL
 const SEARCH_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 
 const searchCache = new Map();
 
 /**
- * Reads server-side YOUTUBE_API_KEY from environment or .env file
- * @returns {string | null}
- */
-export function getYouTubeApiKey() {
-  if (process.env.YOUTUBE_API_KEY && process.env.YOUTUBE_API_KEY !== 'your_youtube_api_key_here') {
-    return process.env.YOUTUBE_API_KEY;
-  }
-  if (process.env.VITE_YOUTUBE_API_KEY && process.env.VITE_YOUTUBE_API_KEY !== 'your_youtube_api_key_here') {
-    return process.env.VITE_YOUTUBE_API_KEY;
-  }
-
-  // Check .env file directly if present
-  try {
-    const envPath = path.resolve(process.cwd(), '.env');
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, 'utf8');
-      const match = content.match(/(?:YOUTUBE_API_KEY|VITE_YOUTUBE_API_KEY)\s*=\s*(.+)/);
-      if (match && match[1].trim() && match[1].trim() !== 'your_youtube_api_key_here') {
-        return match[1].trim();
-      }
-    }
-  } catch (e) {
-    // Ignore read errors
-  }
-
-  return null;
-}
-
-/**
- * Searches YouTube tracks with server-side caching and batching
+ * Searches YouTube tracks via youtube-dl-exec without needing Google Cloud API keys
  * @param {string} rawQuery
  */
 export async function searchTracks(rawQuery) {
@@ -125,7 +84,7 @@ export async function searchTracks(rawQuery) {
   if (!normalizedKey) {
     return {
       tracks: STARTER_QUEUE,
-      hasApiKey: Boolean(getYouTubeApiKey()),
+      hasApiKey: false,
     };
   }
 
@@ -135,94 +94,47 @@ export async function searchTracks(rawQuery) {
     return { ...cached.data, fromCache: true };
   }
 
-  const apiKey = getYouTubeApiKey();
-
-  // 2. If no API key configured, search within starter queue
-  if (!apiKey) {
-    const filtered = STARTER_QUEUE.filter(
-      (t) =>
-        t.title.toLowerCase().includes(normalizedKey) ||
-        t.artist.toLowerCase().includes(normalizedKey) ||
-        (t.album && t.album.toLowerCase().includes(normalizedKey))
-    );
-
-    const fallbackResult = {
-      tracks: filtered.length > 0 ? filtered : STARTER_QUEUE,
-      hasApiKey: false,
-      message: filtered.length > 0
-        ? undefined
-        : `No matches in starter catalog for "${query}". Set YOUTUBE_API_KEY on the server to search all YouTube music.`,
-    };
-
-    return fallbackResult;
-  }
-
-  // 3. Query YouTube Data API v3
+  // 2. Query youtube-dl-exec directly
   try {
-    const encodedQuery = encodeURIComponent(`${query} music`);
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=25&q=${encodedQuery}&key=${apiKey}`;
+    const yt = getYtDlpClient();
+    const searchResult = await yt(`ytsearch15:${query}`, {
+      dumpSingleJson: true,
+      flatPlaylist: true,
+      defaultSearch: 'ytsearch',
+      noCheckCertificates: true,
+    });
 
-    const searchRes = await fetch(searchUrl);
+    const entries = Array.isArray(searchResult?.entries)
+      ? searchResult.entries
+      : searchResult?.id
+      ? [searchResult]
+      : [];
 
-    if (!searchRes.ok) {
-      if (searchRes.status === 403) {
-        throw new Error('YouTube API Quota Exceeded (403 quotaExceeded). Showing curated starter catalog.');
-      }
-      throw new Error(`YouTube search returned HTTP ${searchRes.status}`);
-    }
-
-    const searchData = await searchRes.json();
-
-    if (!searchData.items || !Array.isArray(searchData.items) || searchData.items.length === 0) {
+    if (entries.length === 0) {
       const emptyResult = {
         tracks: [],
-        hasApiKey: true,
+        hasApiKey: false,
         message: `No songs found for "${query}".`,
       };
       searchCache.set(normalizedKey, { data: emptyResult, expiresAt: Date.now() + SEARCH_CACHE_TTL_MS });
       return emptyResult;
     }
 
-    // Batch up to 50 video IDs for videos.list call
-    const videoIds = searchData.items
-      .map((item) => item.id?.videoId)
-      .filter(Boolean)
-      .slice(0, 50)
-      .join(',');
-
-    if (!videoIds) {
-      return { tracks: STARTER_QUEUE, hasApiKey: true };
-    }
-
-    const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,status,snippet&id=${videoIds}&key=${apiKey}`;
-    const detailsRes = await fetch(detailsUrl);
-
-    if (!detailsRes.ok) {
-      throw new Error(`YouTube videos lookup returned HTTP ${detailsRes.status}`);
-    }
-
-    const detailsData = await detailsRes.json();
-    const items = detailsData.items || [];
-
-    // Filter embeddable items and map to TrackItem
-    const validTracks = items
-      .filter((item) => item.status?.embeddable !== false)
+    const validTracks = entries
+      .filter((item) => Boolean(item && item.id && !item.is_live))
       .map((item, idx) => {
         const vid = item.id;
-        const snippet = item.snippet || {};
-        const contentDetails = item.contentDetails || {};
-        const durationSec = parseIsoDuration(contentDetails.duration);
+        const durationSec = Math.round(item.duration || 180);
         const thumb =
-          snippet.thumbnails?.high?.url ||
-          snippet.thumbnails?.medium?.url ||
+          item.thumbnails?.[item.thumbnails.length - 1]?.url ||
           `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
 
         return {
           id: `yt-${vid}-${idx}`,
           videoId: vid,
-          title: snippet.title || 'Untitled Track',
-          artist: snippet.channelTitle || 'YouTube Artist',
-          album: snippet.description ? snippet.description.split('\n')[0]?.slice(0, 60) : undefined,
+          title: item.title || 'Untitled Track',
+          artist: item.uploader || item.channel || 'YouTube Artist',
+          album: item.album || undefined,
           duration: durationSec,
           thumbnailUrl: thumb,
         };
@@ -230,8 +142,8 @@ export async function searchTracks(rawQuery) {
 
     const finalResult = {
       tracks: validTracks.length > 0 ? validTracks : STARTER_QUEUE,
-      hasApiKey: true,
-      message: validTracks.length === 0 ? 'All matching results were restricted by content owners.' : undefined,
+      hasApiKey: false,
+      message: validTracks.length === 0 ? 'No playable audio tracks found.' : undefined,
     };
 
     // Cache the result
@@ -242,9 +154,9 @@ export async function searchTracks(rawQuery) {
 
     return finalResult;
   } catch (err) {
-    console.warn(`[Search error for "${query}"]:`, err.message);
+    console.warn(`[youtube-dl-exec search error for "${query}"]:`, err.message);
 
-    // Graceful fallback to starter queue filter
+    // Fallback to searching the starter queue
     const fallbackTracks = STARTER_QUEUE.filter(
       (t) =>
         t.title.toLowerCase().includes(normalizedKey) ||
@@ -253,8 +165,8 @@ export async function searchTracks(rawQuery) {
 
     return {
       tracks: fallbackTracks.length > 0 ? fallbackTracks : STARTER_QUEUE,
-      hasApiKey: Boolean(apiKey),
-      message: err.message || 'YouTube search unavailable. Displaying starter queue.',
+      hasApiKey: false,
+      message: err.message || 'Live search temporarily unavailable. Displaying starter catalog.',
     };
   }
 }

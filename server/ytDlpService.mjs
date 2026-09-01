@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import youtubedl from 'youtube-dl-exec';
 import path from 'path';
 import fs from 'fs';
 
@@ -9,21 +9,20 @@ const resolvedUrlCache = new Map();
 const inFlightResolutions = new Map();
 
 /**
- * Finds the yt-dlp executable in local bin/ or system PATH
- * @returns {string}
+ * Returns youtubedl instance configured with local binary if present
  */
-export function findYtDlpBinary() {
+export function getYtDlpClient() {
   const localBinExe = path.resolve(process.cwd(), 'bin', 'yt-dlp.exe');
-  if (fs.existsSync(localBinExe)) return localBinExe;
+  if (fs.existsSync(localBinExe)) return youtubedl.create(localBinExe);
 
   const localBin = path.resolve(process.cwd(), 'bin', 'yt-dlp');
-  if (fs.existsSync(localBin)) return localBin;
+  if (fs.existsSync(localBin)) return youtubedl.create(localBin);
 
-  return 'yt-dlp';
+  return youtubedl;
 }
 
 /**
- * Resolves a direct Google Video audio stream URL for a given YouTube video ID
+ * Resolves a direct Google Video audio stream URL for a given YouTube video ID using youtube-dl-exec
  * @param {string} videoId
  * @returns {Promise<string>}
  */
@@ -45,38 +44,35 @@ export async function resolveAudioStreamUrl(videoId) {
     return inFlight;
   }
 
-  // 3. Spawn yt-dlp to extract direct audio URL
-  const ytDlpPath = findYtDlpBinary();
+  const yt = getYtDlpClient();
   const targetUrl = `https://www.youtube.com/watch?v=${cleanId}`;
 
-  const resolutionPromise = new Promise((resolve, reject) => {
-    // -f bestaudio -g returns the direct media stream URL
-    const args = ['-f', 'bestaudio', '-g', targetUrl];
+  const resolutionPromise = (async () => {
+    try {
+      const output = await yt(targetUrl, {
+        getUrl: true,
+        format: 'bestaudio',
+        noCheckCertificates: true,
+      });
 
-    execFile(ytDlpPath, args, { maxBuffer: 10 * 1024 * 1024, timeout: 30000 }, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`[yt-dlp error for ${cleanId}]:`, stderr || error.message);
-        return reject(new Error(`Failed to extract audio stream for ${cleanId}: ${error.message}`));
-      }
-
-      // Output may contain multiple lines or warnings; find the first valid URL
-      const lines = stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      const lines = String(output).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
       const streamUrl = lines.find((line) => line.startsWith('http://') || line.startsWith('https://'));
 
       if (!streamUrl) {
-        console.error(`[yt-dlp no URL in stdout for ${cleanId}]:`, stdout);
-        return reject(new Error(`No audio stream URL returned by yt-dlp for ${cleanId}`));
+        throw new Error(`No audio stream URL returned by youtube-dl-exec for ${cleanId}`);
       }
 
-      // Cache the resolved URL
       resolvedUrlCache.set(cleanId, {
         url: streamUrl,
         expiresAt: Date.now() + CACHE_TTL_MS,
       });
 
-      resolve(streamUrl);
-    });
-  });
+      return streamUrl;
+    } catch (err) {
+      console.error(`[youtube-dl-exec stream error for ${cleanId}]:`, err.message);
+      throw err;
+    }
+  })();
 
   inFlightResolutions.set(cleanId, resolutionPromise);
 
