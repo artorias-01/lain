@@ -4,7 +4,7 @@ import { useLibraryStore, Playlist } from '../../store/useLibraryStore';
 import { TrackItem } from '../../lib/nativeAudioEngine';
 import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
 import { extractDominantColor } from '../../lib/colorExtractor';
-import { Search, Play, X, Heart, Plus, Trash2, Music2, FolderPlus } from 'lucide-react';
+import { Search, Play, X, Heart, Plus, Trash2, FolderPlus } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -68,7 +68,7 @@ export const MainTrackView: React.FC = () => {
     }
   }, [activeTrack?.videoId, activeTrack?.thumbnailUrl]);
 
-  // Scroll-interactive Hero Disc animation with Lenis-synced ScrollTrigger
+  // Snappy Scroll-interactive Hero Disc animation with Lenis-synced ScrollTrigger
   useEffect(() => {
     if (!heroSectionRef.current || !heroDiscContainerRef.current) return;
 
@@ -78,19 +78,19 @@ export const MainTrackView: React.FC = () => {
           trigger: heroSectionRef.current,
           start: 'top top',
           end: 'bottom top+=60',
-          scrub: 0.6,
+          scrub: 0.3,
         },
-        scale: 0.72,
-        y: -32,
-        opacity: 0.62,
-        ease: 'power1.out',
+        scale: 0.78,
+        y: -24,
+        opacity: 0.7,
+        ease: 'none',
       });
     });
 
     return () => ctx.revert();
   }, []);
 
-  // Debounce search input by 450ms
+  // Debounce search input by 400ms
   useEffect(() => {
     if (inputVal === searchQuery) return;
 
@@ -100,7 +100,7 @@ export const MainTrackView: React.FC = () => {
 
     debounceTimerRef.current = setTimeout(() => {
       setSearchQuery(inputVal.trim());
-    }, 450);
+    }, 400);
 
     return () => {
       if (debounceTimerRef.current) {
@@ -145,106 +145,142 @@ export const MainTrackView: React.FC = () => {
     }
   }, [activeMenuTrackId]);
 
-  // Selected Playlist helper
   const currentPlaylist = playlists.find((p) => p.id === selectedPlaylistId) || playlists[0] || null;
 
   return (
-    <main className="max-w-3xl mx-auto px-6 pt-10 pb-36 select-none">
-      {/* Rebranded Masthead Header */}
-      <header className="mb-6 flex items-center justify-between border-b border-scribe pb-5">
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight text-paper">
-          LaIN
-        </h1>
+    <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-36 select-none font-mono">
+      {/* ─────────────────────────────────────────────────────────────
+          TUI TOP BAR / STATUS HEADER
+         ───────────────────────────────────────────────────────────── */}
+      <header className="mb-6 border border-scribe bg-substrate p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-accent font-bold text-lg tracking-tight">LaIN</span>
+          <span className="terminal-cursor text-accent font-bold text-lg">_</span>
+          <span className="text-xs text-kraft ml-2 border-l border-scribe pl-2">
+            [SYS: AUDIO_CORE_ONLINE]
+          </span>
+        </div>
 
-        {/* Lightweight Segmented Control Tab Navigation */}
-        <nav className="flex items-center gap-1 bg-substrate/80 p-1 rounded-lg border border-scribe text-xs font-sans">
+        {/* TUI Bracketed Menu Navigation */}
+        <nav className="flex items-center gap-1 text-xs">
           <button
             onClick={() => setActiveTab('catalog')}
-            className={`px-3 py-1.5 rounded-md transition-all ${
+            className={`px-2.5 py-1 transition-all ${
               activeTab === 'catalog'
-                ? 'bg-paper text-lacquer font-semibold shadow-sm'
-                : 'text-kraft hover:text-paper'
+                ? 'bg-accent text-lacquer font-bold shadow-none'
+                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
             }`}
           >
-            Catalog
+            [ 01: CATALOG ]
           </button>
           <button
             onClick={() => setActiveTab('liked')}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 transition-all flex items-center gap-1 ${
               activeTab === 'liked'
-                ? 'bg-paper text-lacquer font-semibold shadow-sm'
-                : 'text-kraft hover:text-paper'
+                ? 'bg-accent text-lacquer font-bold shadow-none'
+                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
             }`}
           >
-            <Heart className={`w-3 h-3 ${activeTab === 'liked' ? 'fill-lacquer text-lacquer' : ''}`} />
-            <span>Liked ({likedTracks.length})</span>
+            <span>[ 02: LIKED ({likedTracks.length}) ]</span>
           </button>
           <button
             onClick={() => setActiveTab('playlists')}
-            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 transition-all flex items-center gap-1 ${
               activeTab === 'playlists'
-                ? 'bg-paper text-lacquer font-semibold shadow-sm'
-                : 'text-kraft hover:text-paper'
+                ? 'bg-accent text-lacquer font-bold shadow-none'
+                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
             }`}
           >
-            <Music2 className="w-3 h-3" />
-            <span>Playlists ({playlists.length})</span>
+            <span>[ 03: PLAYLISTS ({playlists.length}) ]</span>
           </button>
         </nav>
       </header>
 
-      {/* Signature Scroll-Interactive Hero Vinyl Section */}
-      <section ref={heroSectionRef} className="flex flex-col items-center justify-center pt-2 pb-10 select-none">
-        <div className="relative flex items-center justify-center">
-          {/* Ambient Glow behind disc driven dynamically by artwork accent */}
-          <div
-            className="absolute w-52 h-52 sm:w-60 sm:h-60 rounded-full pointer-events-none blur-3xl opacity-60 transition-all duration-700"
-            style={{ background: 'var(--dynamic-accent-glow)' }}
-          />
+      {/* ─────────────────────────────────────────────────────────────
+          TUI ASCII-BORDERED HERO DISC WIDGET
+         ───────────────────────────────────────────────────────────── */}
+      <section ref={heroSectionRef} className="mb-8 select-none">
+        <div className="border border-scribe bg-substrate p-4 sm:p-6 relative">
+          {/* Panel Header Label */}
+          <div className="flex items-center justify-between text-[11px] text-kraft border-b border-scribe pb-2.5 mb-4">
+            <span className="text-accent font-semibold flex items-center gap-1.5">
+              <span>┌──</span>
+              <span>[ WIDGET: VINYL_OUTPUT ]</span>
+              <span>──┐</span>
+            </span>
+            <span className="tabular-nums">
+              STATUS: {isPlaying ? 'STREAMING [RUN]' : 'STANDBY [IDLE]'}
+            </span>
+          </div>
 
-          {/* Hero Vinyl Disc */}
-          <div
-            ref={heroDiscContainerRef}
-            onClick={() => setIsNowPlayingExpanded(true)}
-            className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full p-2 bg-lacquer/90 border border-scribe shadow-2xl flex items-center justify-center flex-shrink-0 cursor-pointer group transition-transform duration-200 hover:scale-[1.02]"
-            title="Tap to expand Now Playing"
-          >
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2">
+            {/* Vinyl Disc within Crisp Single-Pixel Ring */}
             <div
-              ref={heroDiscRef}
-              className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center shadow-inner"
+              ref={heroDiscContainerRef}
+              onClick={() => setIsNowPlayingExpanded(true)}
+              className="relative w-44 h-44 sm:w-52 sm:h-52 p-1.5 bg-black border border-accent/40 flex items-center justify-center flex-shrink-0 cursor-pointer group hover:border-accent transition-colors"
+              title="Click to open Now Playing terminal"
             >
-              {/* Center Label Masked Album Art */}
-              <div className="w-[50%] h-[50%] rounded-full overflow-hidden relative shadow-md border border-paper/10">
-                {activeTrack ? (
-                  <img
-                    src={activeTrack.thumbnailUrl}
-                    alt={activeTrack.title}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-substrate flex items-center justify-center text-kraft text-xs font-display">
-                    LaIN
-                  </div>
-                )}
+              <div
+                ref={heroDiscRef}
+                className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center shadow-none border border-scribe"
+              >
+                {/* Center Label Masked Album Art */}
+                <div className="w-[48%] h-[48%] rounded-full overflow-hidden relative border border-scribe/80">
+                  {activeTrack ? (
+                    <img
+                      src={activeTrack.thumbnailUrl}
+                      alt={activeTrack.title}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-surface flex items-center justify-center text-accent text-[10px] font-bold">
+                      LaIN
+                    </div>
+                  )}
+                </div>
+
+                {/* Glare Overlay */}
+                <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-40 mix-blend-screen" />
+
+                {/* Center Spindle Hole */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-black border border-accent/60" />
               </div>
+            </div>
 
-              {/* Concentric Vinyl Specular Glare Overlay */}
-              <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-45 mix-blend-screen" />
+            {/* Terminal Metadata Readout */}
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <div className="text-[11px] text-kraft mb-1 uppercase tracking-wider">
+                &gt; NOW_PLAYING_METADATA:
+              </div>
+              <h2 className="font-bold text-base sm:text-lg text-paper truncate">
+                {activeTrack ? activeTrack.title : 'NO_ACTIVE_TRACK'}
+              </h2>
+              <p className="text-xs text-accent truncate mt-0.5">
+                {activeTrack ? `ARTIST: ${activeTrack.artist}` : 'READY FOR INPUT'}
+              </p>
+              {activeTrack?.album && (
+                <p className="text-[11px] text-kraft truncate mt-0.5">
+                  ALBUM:  {activeTrack.album}
+                </p>
+              )}
 
-              {/* Center Spindle Hole */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-lacquer border border-paper/40 shadow-inner" />
+              <div className="mt-3 pt-3 border-t border-scribe/60 flex items-center justify-center sm:justify-start gap-3 text-xs">
+                <button
+                  onClick={() => setIsNowPlayingExpanded(true)}
+                  className="px-2.5 py-1 bg-surface border border-scribe hover:border-accent text-paper hover:text-accent transition-colors flex items-center gap-1.5"
+                >
+                  <span>[ EXPAND_VIEW ]</span>
+                </button>
+                <button
+                  onClick={togglePlay}
+                  className="px-2.5 py-1 bg-accent text-lacquer font-bold hover:bg-accent-hover transition-colors flex items-center gap-1"
+                >
+                  <span>{isPlaying ? '[ PAUSE ]' : '[ PLAY ]'}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Dynamic Track Attribution under Hero Disc */}
-        <div className="mt-4 text-center max-w-sm px-4">
-          <p className="font-display font-semibold text-sm sm:text-base text-paper truncate">
-            {activeTrack ? activeTrack.title : 'Ready to play'}
-          </p>
-          <p className="font-sans text-xs text-kraft truncate mt-0.5">
-            {activeTrack ? activeTrack.artist : 'Select a recording to begin'}
-          </p>
         </div>
       </section>
 
@@ -252,63 +288,65 @@ export const MainTrackView: React.FC = () => {
           TAB 1: CATALOG / SEARCH
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'catalog' && (
-        <>
-          {/* Architectural Search Bar */}
-          <section className="mb-8">
-            <div className="relative flex items-center border-b border-scribe focus-within:border-accent transition-colors pb-2">
-              <Search className="w-4 h-4 text-kraft flex-shrink-0 mr-3 pointer-events-none" />
+        <section>
+          {/* Direct CLI Command Search Input */}
+          <div className="mb-6">
+            <div className="relative flex items-center border border-scribe bg-substrate px-3 py-2.5 focus-within:border-accent transition-colors">
+              <span className="text-accent text-xs font-bold mr-2 pointer-events-none select-none">
+                &gt; search:
+              </span>
               <input
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Search songs, artists, or compositions..."
-                className="w-full bg-transparent text-paper placeholder:text-kraft/60 text-sm font-sans focus:outline-none"
+                placeholder="query title, artist, or composition..."
+                className="w-full bg-transparent text-paper placeholder:text-kraft/50 text-xs focus:outline-none"
               />
               {inputVal && (
                 <button
                   onClick={handleClearSearch}
-                  className="text-kraft hover:text-paper transition-colors p-1"
+                  className="text-kraft hover:text-paper transition-colors px-1"
                   title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
               {isSearching && (
-                <span className="font-sans text-[11px] tabular-nums text-accent ml-2 animate-pulse flex-shrink-0">
-                  Locating...
+                <span className="text-[11px] tabular-nums text-accent ml-2 animate-pulse flex-shrink-0">
+                  [QUERYING...]
                 </span>
               )}
             </div>
 
             {searchMessage && (
-              <p className="mt-2 text-xs text-kraft leading-relaxed font-sans">
-                {searchMessage}
+              <p className="mt-2 text-xs text-kraft leading-relaxed">
+                # {searchMessage}
               </p>
             )}
 
             {trackErrorMessage && (
-              <p className="mt-2 text-xs text-accent leading-relaxed font-sans">
-                {trackErrorMessage}
+              <p className="mt-2 text-xs text-red-400 leading-relaxed">
+                ! {trackErrorMessage}
               </p>
             )}
-          </section>
+          </div>
 
-          {/* Catalog Track List */}
-          <section>
-            <div className="grid grid-cols-[32px_1fr_60px_60px] sm:grid-cols-[40px_1fr_70px_70px] items-center text-xs font-sans text-kraft border-b border-scribe pb-2 mb-1 px-3">
+          {/* Catalog Fixed-Width Table */}
+          <div className="border border-scribe bg-substrate">
+            <div className="grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center text-xs text-kraft border-b border-scribe py-2 px-3 bg-surface">
               <span className="tabular-nums">#</span>
-              <span>Composition</span>
-              <span className="text-center">Save</span>
-              <span className="text-right tabular-nums">Length</span>
+              <span>COMPOSITION / ARTIST</span>
+              <span className="text-center">SAVE</span>
+              <span className="text-right tabular-nums">TIME</span>
             </div>
 
             {searchResults.length === 0 ? (
-              <div className="py-16 text-center text-kraft font-sans text-sm">
-                <p>No recordings match your query.</p>
-                <p className="text-xs text-kraft/60 mt-1">Try querying another artist or title.</p>
+              <div className="py-16 text-center text-kraft text-xs">
+                <p>[!] NO RECORDINGS MATCH CURRENT QUERY.</p>
+                <p className="text-kraft/60 mt-1">Check query spelling or enter a different term.</p>
               </div>
             ) : (
-              <div className="divide-y divide-scribe/40">
+              <div className="divide-y divide-scribe">
                 {searchResults.map((track, idx) => (
                   <TrackRow
                     key={track.id || track.videoId}
@@ -331,8 +369,8 @@ export const MainTrackView: React.FC = () => {
                 ))}
               </div>
             )}
-          </section>
-        </>
+          </div>
+        </section>
       )}
 
       {/* ─────────────────────────────────────────────────────────────
@@ -340,34 +378,33 @@ export const MainTrackView: React.FC = () => {
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'liked' && (
         <section>
-          <div className="flex items-center justify-between mb-4 border-b border-scribe pb-3">
+          <div className="border border-scribe bg-substrate p-3 mb-4 flex items-center justify-between">
             <div>
-              <h2 className="font-display font-bold text-lg text-paper">Liked Songs</h2>
-              <p className="font-sans text-xs text-kraft">Your personal collection of saved compositions</p>
+              <span className="text-xs text-accent font-bold">&gt; [ ARCHIVE: LIKED_SONGS ]</span>
+              <p className="text-[11px] text-kraft mt-0.5">Persisted local collection</p>
             </div>
-            <span className="font-sans text-xs tabular-nums text-kraft">
-              {likedTracks.length} {likedTracks.length === 1 ? 'song' : 'songs'}
+            <span className="text-xs tabular-nums text-kraft">
+              COUNT: {likedTracks.length}
             </span>
           </div>
 
           {likedTracks.length === 0 ? (
-            <div className="py-20 text-center text-kraft font-sans text-sm rounded-xl border border-dashed border-scribe/80 p-8">
-              <Heart className="w-8 h-8 text-kraft/40 mx-auto mb-3" />
-              <p className="text-paper font-semibold">No liked songs yet</p>
-              <p className="text-xs text-kraft/70 mt-1">
-                Tap the heart on any track in the Catalog to add it to your collection.
+            <div className="py-16 text-center text-kraft text-xs border border-dashed border-scribe p-8 bg-substrate">
+              <p className="text-paper font-bold">[!] NO LIKED RECORDINGS RECORDED</p>
+              <p className="text-kraft/70 mt-1">
+                Toggle the heart marker [♥] on any composition to save it to your local storage.
               </p>
             </div>
           ) : (
-            <>
-              <div className="grid grid-cols-[32px_1fr_60px_60px] sm:grid-cols-[40px_1fr_70px_70px] items-center text-xs font-sans text-kraft border-b border-scribe pb-2 mb-1 px-3">
+            <div className="border border-scribe bg-substrate">
+              <div className="grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center text-xs text-kraft border-b border-scribe py-2 px-3 bg-surface">
                 <span className="tabular-nums">#</span>
-                <span>Composition</span>
-                <span className="text-center">Save</span>
-                <span className="text-right tabular-nums">Length</span>
+                <span>COMPOSITION / ARTIST</span>
+                <span className="text-center">SAVE</span>
+                <span className="text-right tabular-nums">TIME</span>
               </div>
 
-              <div className="divide-y divide-scribe/40">
+              <div className="divide-y divide-scribe">
                 {likedTracks.map((track, idx) => (
                   <TrackRow
                     key={track.id || track.videoId}
@@ -389,7 +426,7 @@ export const MainTrackView: React.FC = () => {
                   />
                 ))}
               </div>
-            </>
+            </div>
           )}
         </section>
       )}
@@ -399,110 +436,106 @@ export const MainTrackView: React.FC = () => {
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'playlists' && (
         <section>
-          {/* Create Playlist Form */}
-          <form onSubmit={handleCreatePlaylist} className="mb-6 flex gap-2">
-            <div className="relative flex-1">
+          {/* CLI Form: Create Playlist */}
+          <form onSubmit={handleCreatePlaylist} className="mb-4 flex gap-2">
+            <div className="relative flex-1 flex items-center border border-scribe bg-substrate px-3 py-2 focus-within:border-accent">
+              <span className="text-accent text-xs font-bold mr-2 select-none">&gt; mkplaylist:</span>
               <input
                 type="text"
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
-                placeholder="New playlist name..."
-                className="w-full bg-substrate border border-scribe rounded-lg px-3.5 py-2 text-sm text-paper placeholder:text-kraft/60 font-sans focus:outline-none focus:border-accent transition-colors"
+                placeholder="playlist_label..."
+                className="w-full bg-transparent text-xs text-paper placeholder:text-kraft/50 focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={!newPlaylistName.trim()}
-              className="bg-paper text-lacquer hover:bg-white disabled:opacity-40 disabled:pointer-events-none px-4 py-2 rounded-lg font-sans text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm flex-shrink-0"
+              className="bg-accent text-lacquer hover:bg-accent-hover disabled:opacity-30 disabled:pointer-events-none px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
             >
               <FolderPlus className="w-3.5 h-3.5" />
-              <span>Create</span>
+              <span>[ CREATE ]</span>
             </button>
           </form>
 
           {playlists.length === 0 ? (
-            <div className="py-20 text-center text-kraft font-sans text-sm rounded-xl border border-dashed border-scribe/80 p-8">
-              <Music2 className="w-8 h-8 text-kraft/40 mx-auto mb-3" />
-              <p className="text-paper font-semibold">No playlists yet</p>
-              <p className="text-xs text-kraft/70 mt-1">
-                Enter a name above and click "Create" to start a custom playlist.
+            <div className="py-16 text-center text-kraft text-xs border border-dashed border-scribe p-8 bg-substrate">
+              <p className="text-paper font-bold">[!] ZERO PLAYLISTS RECORDED</p>
+              <p className="text-kraft/70 mt-1">
+                Execute 'mkplaylist' command above to create a named track list.
               </p>
             </div>
           ) : (
             <div>
-              {/* Playlist Selection Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
+              {/* Terminal Playlist Selectors */}
+              <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-3">
                 {playlists.map((pl) => {
                   const isSelected = currentPlaylist?.id === pl.id;
                   return (
                     <button
                       key={pl.id}
                       onClick={() => setSelectedPlaylistId(pl.id)}
-                      className={`px-3.5 py-1.5 rounded-full text-xs font-sans transition-all flex-shrink-0 ${
+                      className={`px-3 py-1 text-xs transition-colors flex-shrink-0 ${
                         isSelected
-                          ? 'bg-paper text-lacquer font-semibold shadow-sm'
+                          ? 'bg-accent text-lacquer font-bold'
                           : 'bg-substrate border border-scribe text-kraft hover:text-paper hover:border-scribe/80'
                       }`}
                     >
-                      {pl.name} ({pl.tracks.length})
+                      [ {pl.name} ({pl.tracks.length}) ]
                     </button>
                   );
                 })}
               </div>
 
-              {/* Selected Playlist Header & Tracks */}
+              {/* Selected Playlist Inspector */}
               {currentPlaylist && (
-                <div className="bg-substrate/40 border border-scribe rounded-xl p-4 sm:p-5">
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-scribe">
+                <div className="border border-scribe bg-substrate p-4">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-scribe">
                     <div>
-                      <h3 className="font-display font-bold text-lg text-paper">
-                        {currentPlaylist.name}
-                      </h3>
-                      <p className="font-sans text-xs text-kraft mt-0.5">
-                        {currentPlaylist.tracks.length} {currentPlaylist.tracks.length === 1 ? 'recording' : 'recordings'}
+                      <span className="text-xs text-accent font-bold">
+                        &gt; INSPECTING_PLAYLIST: {currentPlaylist.name}
+                      </span>
+                      <p className="text-[11px] text-kraft mt-0.5">
+                        COUNT: {currentPlaylist.tracks.length} compositions
                       </p>
                     </div>
 
                     <button
                       onClick={() => deletePlaylist(currentPlaylist.id)}
-                      className="text-kraft/60 hover:text-red-400 p-2 rounded-lg hover:bg-white/5 transition-colors"
-                      title="Delete Playlist"
+                      className="text-kraft hover:text-red-400 p-1.5 border border-scribe hover:border-red-400/50 bg-surface transition-colors flex items-center gap-1 text-xs"
+                      title="Delete playlist"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>[ RM ]</span>
                     </button>
                   </div>
 
                   {currentPlaylist.tracks.length === 0 ? (
-                    <div className="py-12 text-center text-kraft font-sans text-xs">
-                      <p>This playlist is empty.</p>
+                    <div className="py-10 text-center text-kraft text-xs">
+                      <p>[!] PLAYLIST CONTAINS 0 TRACKS.</p>
                       <p className="text-kraft/60 mt-1">
-                        Use the "+" action on any track in Catalog or Liked Songs to add to this playlist.
+                        Use the [+] action button on Catalog or Liked tracks to insert entries.
                       </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-scribe/40">
+                    <div className="divide-y divide-scribe">
                       {currentPlaylist.tracks.map((track, idx) => (
                         <div
                           key={`${track.videoId}-${idx}`}
                           onClick={() => handleTrackClick(track)}
-                          className="group grid grid-cols-[32px_1fr_40px_60px] items-center px-2 py-3 rounded-lg hover:bg-white/[0.03] cursor-pointer transition-colors"
+                          className="group grid grid-cols-[36px_1fr_40px_65px] items-center px-2 py-2.5 hover:bg-surface cursor-pointer transition-colors"
                         >
-                          <span className="font-sans text-xs tabular-nums text-kraft">
-                            {idx + 1}
+                          <span className="text-xs tabular-nums text-kraft">
+                            {(idx + 1).toString().padStart(2, '0')}
                           </span>
 
-                          <div className="flex items-center gap-3 min-w-0 pr-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-lacquer border border-scribe flex-shrink-0">
-                              <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-sans text-sm font-semibold text-paper truncate group-hover:text-accent transition-colors">
-                                {track.title}
-                              </p>
-                              <p className="font-sans text-xs text-kraft truncate">
-                                {track.artist}
-                              </p>
-                            </div>
+                          <div className="min-w-0 pr-2">
+                            <p className="text-xs font-semibold text-paper truncate group-hover:text-accent transition-colors">
+                              {track.title}
+                            </p>
+                            <p className="text-[11px] text-kraft truncate">
+                              {track.artist}
+                            </p>
                           </div>
 
                           <button
@@ -510,13 +543,13 @@ export const MainTrackView: React.FC = () => {
                               e.stopPropagation();
                               removeTrackFromPlaylist(currentPlaylist.id, track.videoId);
                             }}
-                            className="text-kraft/50 hover:text-red-400 p-1 transition-colors"
+                            className="text-kraft hover:text-red-400 p-1 transition-colors"
                             title="Remove from playlist"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
 
-                          <div className="text-right font-sans text-xs tabular-nums text-kraft">
+                          <div className="text-right text-xs tabular-nums text-kraft">
                             {formatDuration(track.duration)}
                           </div>
                         </div>
@@ -569,56 +602,41 @@ const TrackRow: React.FC<TrackRowProps> = ({
   return (
     <div
       onClick={() => onTrackClick(track)}
-      className={`group grid grid-cols-[32px_1fr_60px_60px] sm:grid-cols-[40px_1fr_70px_70px] items-center px-3 py-3.5 cursor-pointer transition-colors relative ${
+      className={`group grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center px-3 py-2.5 cursor-pointer transition-colors relative ${
         isActive
-          ? 'bg-substrate text-paper border-l-2 border-accent'
-          : 'hover:bg-substrate/60 text-paper/90'
+          ? 'bg-surface text-accent border-l-2 border-accent'
+          : 'hover:bg-surface/70 text-paper'
       }`}
     >
-      {/* Column 1: Track Index / Animated Pulse */}
+      {/* Column 1: Index / Play Status */}
       <div className="flex items-center">
-        <span className="font-sans font-medium text-xs tabular-nums text-kraft flex items-center justify-center w-5">
+        <span className="text-xs tabular-nums text-kraft flex items-center justify-center w-5">
           {isRowPlaying ? (
-            <span className="flex items-center gap-[2px] h-3.5">
-              <span className="w-[2px] h-2 bg-accent animate-pulse" />
-              <span className="w-[2px] h-3.5 bg-accent animate-pulse delay-75" />
-              <span className="w-[2px] h-2.5 bg-accent animate-pulse delay-150" />
-            </span>
+            <span className="text-accent font-bold animate-pulse">&gt;</span>
           ) : (
             <span className="group-hover:hidden">{trackNum}</span>
           )}
           <Play
-            className={`w-3.5 h-3.5 text-accent fill-current ${
+            className={`w-3 h-3 text-accent fill-current ${
               isRowPlaying ? 'hidden' : 'hidden group-hover:block'
             }`}
           />
         </span>
       </div>
 
-      {/* Column 2: Artwork Disc + Title & Artist */}
-      <div className="flex items-center gap-3.5 min-w-0 pr-3">
-        <div className="relative w-9 h-9 rounded-full overflow-hidden bg-lacquer border border-scribe flex-shrink-0 shadow-sm">
-          <img
-            src={track.thumbnailUrl}
-            alt=""
-            className="w-full h-full object-cover rounded-full"
-            loading="lazy"
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h3
-            className={`font-display font-semibold text-sm truncate tracking-tight ${
-              isActive ? 'text-accent' : 'text-paper group-hover:text-accent transition-colors'
-            }`}
-          >
-            {track.title}
-          </h3>
-          <p className="font-sans text-xs text-kraft truncate mt-0.5">
-            {track.artist}
-            {track.album && <span className="opacity-60"> — {track.album}</span>}
-          </p>
-        </div>
+      {/* Column 2: Monospace Track Title & Artist */}
+      <div className="min-w-0 pr-3">
+        <p
+          className={`text-xs font-semibold truncate ${
+            isActive ? 'text-accent' : 'text-paper group-hover:text-accent transition-colors'
+          }`}
+        >
+          {track.title}
+        </p>
+        <p className="text-[11px] text-kraft truncate mt-0.5">
+          {track.artist}
+          {track.album && <span className="opacity-60"> // {track.album}</span>}
+        </p>
       </div>
 
       {/* Column 3: Like / Add Actions */}
@@ -628,11 +646,11 @@ const TrackRow: React.FC<TrackRowProps> = ({
             e.stopPropagation();
             onToggleLike(track);
           }}
-          className="p-1 text-kraft/60 hover:text-paper transition-colors rounded-full"
+          className="p-1 text-kraft hover:text-paper transition-colors"
           title={isLiked ? 'Unlike' : 'Like'}
         >
           <Heart
-            className={`w-4 h-4 transition-colors ${
+            className={`w-3.5 h-3.5 transition-colors ${
               isLiked ? 'fill-accent text-accent' : 'hover:text-paper'
             }`}
           />
@@ -642,20 +660,20 @@ const TrackRow: React.FC<TrackRowProps> = ({
           <div className="relative">
             <button
               onClick={onToggleMenu}
-              className="p-1 text-kraft/50 hover:text-paper transition-colors rounded-full"
+              className="p-1 text-kraft hover:text-paper transition-colors"
               title="Add to playlist"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
             </button>
 
-            {/* Playlist dropdown menu */}
+            {/* Sharp TUI Playlist Dropdown */}
             {isMenuOpen && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-full mt-1 z-30 w-44 bg-substrate border border-scribe rounded-lg shadow-xl py-1 text-xs font-sans animate-in fade-in zoom-in-95 duration-100"
+                className="absolute right-0 top-full mt-1 z-30 w-48 bg-substrate border border-accent/60 shadow-none py-1 text-xs"
               >
-                <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-kraft/60 border-b border-scribe/60">
-                  Add to playlist
+                <div className="px-2.5 py-1 text-[10px] uppercase text-accent border-b border-scribe">
+                  &gt; add_to_playlist:
                 </div>
                 {playlists.map((p) => (
                   <button
@@ -664,10 +682,10 @@ const TrackRow: React.FC<TrackRowProps> = ({
                       onAddToPlaylist(p.id, track);
                       onToggleMenu({ stopPropagation: () => {} } as React.MouseEvent);
                     }}
-                    className="w-full px-3 py-1.5 text-left text-paper hover:bg-white/5 truncate flex items-center justify-between"
+                    className="w-full px-2.5 py-1 text-left text-paper hover:bg-accent hover:text-lacquer truncate flex items-center justify-between"
                   >
-                    <span className="truncate">{p.name}</span>
-                    <span className="text-[10px] text-kraft ml-1">{p.tracks.length}</span>
+                    <span className="truncate">[ {p.name} ]</span>
+                    <span className="text-[10px] opacity-70 ml-1">{p.tracks.length}</span>
                   </button>
                 ))}
               </div>
@@ -677,7 +695,7 @@ const TrackRow: React.FC<TrackRowProps> = ({
       </div>
 
       {/* Column 4: Tabular Duration */}
-      <div className="text-right font-sans font-medium text-xs tabular-nums text-kraft group-hover:text-paper transition-colors">
+      <div className="text-right text-xs tabular-nums text-kraft group-hover:text-paper transition-colors">
         {formatDuration(track.duration)}
       </div>
     </div>

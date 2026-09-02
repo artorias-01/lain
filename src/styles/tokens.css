@@ -3,26 +3,37 @@
 @tailwind utilities;
 
 :root {
-  /* Cool Neutral Dark Palette */
-  --bg-lacquer: #0A0B0E;
-  --bg-substrate: #13151A;
+  /* Terminal / TUI Phosphor System */
+  --bg-lacquer: #050505;
+  --bg-substrate: #0E110E;
+  --bg-surface: #141814;
   
-  /* Dynamic Artwork-Derived Accent with Cool Slate Fallback */
-  --dynamic-accent: #5875A6;
-  --dynamic-accent-hover: #6D8DC2;
-  --dynamic-accent-rgb: 88, 117, 166;
-  --dynamic-accent-dim: rgba(88, 117, 166, 0.15);
-  --dynamic-accent-glow: rgba(88, 117, 166, 0.28);
+  /* Classic CRT Phosphor Green Register */
+  --terminal-green: #22C55E;
+  --terminal-green-bright: #4ADE80;
+  --terminal-green-dim: rgba(34, 197, 94, 0.15);
+  --terminal-green-glow: rgba(34, 197, 94, 0.22);
+  
+  --dynamic-accent: var(--terminal-green);
+  --dynamic-accent-hover: var(--terminal-green-bright);
+  --dynamic-accent-rgb: 34, 197, 94;
+  --dynamic-accent-dim: var(--terminal-green-dim);
+  --dynamic-accent-glow: var(--terminal-green-glow);
   
   --color-ochre: var(--dynamic-accent);
   --color-ochre-hover: var(--dynamic-accent-hover);
   --color-ochre-dim: var(--dynamic-accent-dim);
   
-  --text-paper: #F2F4F8;
-  --text-paper-dim: rgba(242, 244, 248, 0.75);
-  --text-kraft: #8B93A2;
-  --border-scribe: #20232B;
-  --border-scribe-subtle: #171920;
+  --text-paper: #E5E7EB;
+  --text-paper-dim: #9CA3AF;
+  --text-kraft: #6B7280;
+  
+  --border-scribe: #1C261D;
+  --border-scribe-subtle: #141D15;
+}
+
+body {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* Tabular numbers for aligned timestamps and track indices */
@@ -30,22 +41,33 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Minimalist Archival Scrollbar */
+/* Terminal Blinking Cursor */
+@keyframes terminal-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  animation: terminal-blink 1s steps(1) infinite;
+}
+
+/* Minimalist Sharp Terminal Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-lacquer);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-scribe);
-  border-radius: 2px;
+  border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--dynamic-accent);
+  background: var(--terminal-green);
 }
 
-/* Unadorned Range Slider */
+/* Sharp Unadorned Terminal Range Slider */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -56,43 +78,43 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 2px;
   background: var(--border-scribe);
-  border-radius: 1px;
+  border-radius: 0px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   height: 10px;
-  width: 10px;
-  border-radius: 50%;
-  background: var(--text-paper);
+  width: 6px;
+  border-radius: 0px;
+  background: var(--terminal-green);
   margin-top: -4px;
-  transition: transform 0.1s ease, background 0.1s ease;
+  transition: transform 0.1s linear, background 0.1s linear;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  background: var(--dynamic-accent);
+  background: var(--terminal-green-bright);
 }
 
-/* Concentric micro-groove vinyl pattern in neutral obsidian / graphite */
+/* Concentric micro-groove vinyl pattern in deep obsidian */
 .vinyl-grooves-pattern {
   background: radial-gradient(circle,
-    #111215 0%,
-    #111215 18%,
-    #090a0c 19%,
-    #16181d 20%,
-    #08090b 23%,
-    #131519 24%,
-    #0a0b0d 30%,
-    #181a20 31%,
-    #090a0c 42%,
-    #14161b 43%,
-    #08090b 58%,
-    #13151a 59%,
-    #060708 72%,
-    #111317 73%,
-    #040506 100%
+    #0d0f0d 0%,
+    #0d0f0d 18%,
+    #050605 19%,
+    #131713 20%,
+    #060806 23%,
+    #101410 24%,
+    #070907 30%,
+    #141914 31%,
+    #060806 42%,
+    #121612 43%,
+    #050605 58%,
+    #101310 59%,
+    #040504 72%,
+    #0d100d 73%,
+    #030403 100%
   );
 }
 
@@ -101,10 +123,10 @@ input[type="range"]::-webkit-slider-thumb:hover {
   background: conic-gradient(
     from 40deg,
     rgba(255, 255, 255, 0) 0deg,
-    rgba(255, 255, 255, 0.12) 30deg,
+    rgba(34, 197, 94, 0.10) 30deg,
     rgba(255, 255, 255, 0) 65deg,
     rgba(255, 255, 255, 0) 180deg,
-    rgba(255, 255, 255, 0.12) 210deg,
+    rgba(34, 197, 94, 0.10) 210deg,
     rgba(255, 255, 255, 0) 245deg,
     rgba(255, 255, 255, 0) 360deg
   );

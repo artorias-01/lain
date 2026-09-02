@@ -14,7 +14,7 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-lacquer text-paper font-sans selection:bg-ochre selection:text-lacquer relative">
+    <div className="min-h-screen bg-lacquer text-paper font-mono selection:bg-accent selection:text-lacquer relative">
       {/* Editorial Catalog View */}
       <MainTrackView />
 

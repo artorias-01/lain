@@ -7,8 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        lacquer: '#0A0B0E',
-        substrate: '#13151A',
+        lacquer: '#050505',
+        substrate: '#0E110E',
+        surface: '#141814',
         accent: {
           DEFAULT: 'var(--dynamic-accent)',
           hover: 'var(--dynamic-accent-hover)',
@@ -21,21 +22,22 @@ export default {
           dim: 'var(--dynamic-accent-dim)',
         },
         paper: {
-          DEFAULT: '#F2F4F8',
-          dim: 'rgba(242, 244, 248, 0.75)',
+          DEFAULT: '#E5E7EB',
+          dim: '#9CA3AF',
         },
         kraft: {
-          DEFAULT: '#8B93A2',
-          dark: '#586070',
+          DEFAULT: '#8B95A5',
+          dark: '#4B5563',
         },
         scribe: {
-          DEFAULT: '#20232B',
-          subtle: '#171920',
+          DEFAULT: '#1C261D',
+          subtle: '#141D15',
         },
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        sans: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        display: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       animation: {
         'spin-disc': 'spin 3.2s linear infinite',

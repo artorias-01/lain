@@ -6,7 +6,6 @@ import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
 import { extractDominantColor, createAmbientGradient, FALLBACK_COLOR } from '../../lib/colorExtractor';
 import { fetchLyrics, LyricsResult } from '../../lib/lyricsService';
 import {
-  ChevronDown,
   Play,
   Pause,
   SkipBack,
@@ -18,9 +17,9 @@ import {
   Volume2,
   VolumeX,
   FileText,
+  X,
 } from 'lucide-react';
 import gsap from 'gsap';
-import anime from 'animejs';
 import Lenis from 'lenis';
 
 export const ExpandedNowPlaying: React.FC = () => {
@@ -61,9 +60,8 @@ export const ExpandedNowPlaying: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const queueSectionRef = useRef<HTMLDivElement>(null);
   const discRef = useRef<HTMLDivElement>(null);
-  const playIconRef = useRef<HTMLSpanElement>(null);
 
-  // Gradient background cross-fade layers
+  // Background layers
   const bgLayer1Ref = useRef<HTMLDivElement>(null);
   const bgLayer2Ref = useRef<HTMLDivElement>(null);
   const activeLayerRef = useRef<1 | 2>(1);
@@ -76,7 +74,6 @@ export const ExpandedNowPlaying: React.FC = () => {
   const trackContainerRef = useRef<HTMLDivElement>(null);
   const [isScrubHovered, setIsScrubHovered] = useState(false);
 
-  // Format seconds to mm:ss
   const formatTime = (seconds: number): string => {
     if (!isFinite(seconds) || seconds <= 0) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -84,7 +81,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  // 1. Synchronized Vinyl Rotation
+  // Synchronized Vinyl Rotation
   useEffect(() => {
     setVinylPlaying(isPlaying);
   }, [isPlaying]);
@@ -97,7 +94,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     };
   }, [isNowPlayingExpanded]);
 
-  // 2. Animate Entry and Exit
+  // Snappy Terminal Entry and Exit (180ms, linear/sharp power1)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -106,8 +103,8 @@ export const ExpandedNowPlaying: React.FC = () => {
       document.body.style.overflow = 'hidden';
       gsap.fromTo(
         el,
-        { y: '100%', opacity: 0.8 },
-        { y: '0%', opacity: 1, duration: 0.42, ease: 'power3.out' }
+        { y: '100%', opacity: 0.9 },
+        { y: '0%', opacity: 1, duration: 0.18, ease: 'power2.out' }
       );
     } else {
       document.body.style.overflow = '';
@@ -118,7 +115,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     };
   }, [isNowPlayingExpanded]);
 
-  // Wire Lenis smooth scroll specifically to the modal scroll container
+  // Smooth scroll
   useEffect(() => {
     if (!isNowPlayingExpanded || !scrollContainerRef.current) return;
     const container = scrollContainerRef.current;
@@ -128,7 +125,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     const modalLenis = new Lenis({
       wrapper: container,
       content: content,
-      duration: 1.0,
+      duration: 0.8,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
@@ -149,7 +146,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     };
   }, [isNowPlayingExpanded]);
 
-  // 3. Dynamic Color Extraction on Track Change with Smooth Cross-Fade
+  // Terminal Ambient Glow
   useEffect(() => {
     if (!isNowPlayingExpanded) return;
 
@@ -159,23 +156,22 @@ export const ExpandedNowPlaying: React.FC = () => {
       if (!isMounted) return;
       const gradient = createAmbientGradient(color);
 
-      // Alternate cross-fading between bgLayer1 and bgLayer2
       if (activeLayerRef.current === 1) {
         if (bgLayer2Ref.current) {
           bgLayer2Ref.current.style.background = gradient;
-          gsap.to(bgLayer2Ref.current, { opacity: 1, duration: 0.55, ease: 'power2.inOut' });
+          gsap.to(bgLayer2Ref.current, { opacity: 1, duration: 0.25, ease: 'power1.out' });
         }
         if (bgLayer1Ref.current) {
-          gsap.to(bgLayer1Ref.current, { opacity: 0, duration: 0.55, ease: 'power2.inOut' });
+          gsap.to(bgLayer1Ref.current, { opacity: 0, duration: 0.25, ease: 'power1.out' });
         }
         activeLayerRef.current = 2;
       } else {
         if (bgLayer1Ref.current) {
           bgLayer1Ref.current.style.background = gradient;
-          gsap.to(bgLayer1Ref.current, { opacity: 1, duration: 0.55, ease: 'power2.inOut' });
+          gsap.to(bgLayer1Ref.current, { opacity: 1, duration: 0.25, ease: 'power1.out' });
         }
         if (bgLayer2Ref.current) {
-          gsap.to(bgLayer2Ref.current, { opacity: 0, duration: 0.55, ease: 'power2.inOut' });
+          gsap.to(bgLayer2Ref.current, { opacity: 0, duration: 0.25, ease: 'power1.out' });
         }
         activeLayerRef.current = 1;
       }
@@ -186,7 +182,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     };
   }, [activeTrack?.videoId, activeTrack?.thumbnailUrl, isNowPlayingExpanded]);
 
-  // 4. Fetch Lyrics via lrclib.net on Track Change
+  // Fetch Lyrics via lrclib.net on Track Change
   useEffect(() => {
     if (!activeTrack) return;
 
@@ -206,7 +202,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     };
   }, [activeTrack?.videoId, activeTrack?.title, activeTrack?.artist]);
 
-  // 5. Progress bar continuous rAF loop
+  // Progress Bar rAF loop
   useEffect(() => {
     if (!isNowPlayingExpanded) return;
 
@@ -240,21 +236,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     return () => cancelAnimationFrame(animFrameId);
   }, [isNowPlayingExpanded]);
 
-  // 6. Play/Pause icon pop micro-animation
-  useEffect(() => {
-    if (playIconRef.current && isNowPlayingExpanded) {
-      anime.remove(playIconRef.current);
-      anime({
-        targets: playIconRef.current,
-        scale: [0.82, 1],
-        opacity: [0.65, 1],
-        duration: 250,
-        easing: 'easeOutBack',
-      });
-    }
-  }, [isPlaying, isNowPlayingExpanded]);
-
-  // Handle Seek Interaction
+  // Seek Interaction
   const handleSeek = (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
     if (!trackContainerRef.current || nativeAudioEngine.durationRef.current <= 0) return;
     const rect = trackContainerRef.current.getBoundingClientRect();
@@ -282,7 +264,6 @@ export const ExpandedNowPlaying: React.FC = () => {
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Collapse with smooth animation
   const handleCollapse = () => {
     const el = containerRef.current;
     if (!el) {
@@ -292,16 +273,15 @@ export const ExpandedNowPlaying: React.FC = () => {
 
     gsap.to(el, {
       y: '100%',
-      opacity: 0.8,
-      duration: 0.32,
-      ease: 'power3.in',
+      opacity: 0.9,
+      duration: 0.16,
+      ease: 'power2.in',
       onComplete: () => {
         setIsNowPlayingExpanded(false);
       },
     });
   };
 
-  // Escape key collapse listener
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isNowPlayingExpanded) {
@@ -326,208 +306,217 @@ export const ExpandedNowPlaying: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 overflow-hidden flex flex-col bg-lacquer text-paper select-none"
+      className="fixed inset-0 z-50 overflow-hidden flex flex-col bg-black text-paper select-none font-mono"
     >
-      {/* Dynamic Ambient Background Layers */}
+      {/* CRT Phosphor Aura */}
       <div
         ref={bgLayer1Ref}
-        className="absolute inset-0 pointer-events-none transition-none"
+        className="absolute inset-0 pointer-events-none"
         style={{ background: initialGradient, opacity: 1 }}
       />
       <div
         ref={bgLayer2Ref}
-        className="absolute inset-0 pointer-events-none transition-none"
+        className="absolute inset-0 pointer-events-none"
         style={{ background: initialGradient, opacity: 0 }}
       />
 
-      {/* Subtle vignette darkening at bottom and edges */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/10 via-transparent to-lacquer/90" />
-
-      {/* Scrollable Container (Lenis / Native Smooth Scroll) */}
+      {/* Scrollable Container */}
       <div
         ref={scrollContainerRef}
-        className="relative z-10 w-full h-full overflow-y-auto overflow-x-hidden flex flex-col items-center px-6 sm:px-12 py-6 scroll-smooth"
+        className="relative z-10 w-full h-full overflow-y-auto overflow-x-hidden flex flex-col items-center px-4 sm:px-8 py-4"
       >
-        <div className="w-full max-w-lg flex flex-col min-h-full pb-20">
-          {/* Top Header Row */}
-          <header className="w-full flex items-center justify-between pt-2 pb-4">
+        <div className="w-full max-w-xl flex flex-col min-h-full pb-20">
+          {/* TUI Top Header */}
+          <header className="w-full flex items-center justify-between border-b border-scribe pb-3 mb-4">
             <button
               onClick={handleCollapse}
-              className="p-2 -ml-2 text-paper/80 hover:text-paper active:scale-90 transition-all rounded-full hover:bg-white/5"
-              title="Collapse (Esc)"
+              className="px-2 py-1 bg-substrate border border-scribe hover:border-accent text-kraft hover:text-accent transition-colors text-xs flex items-center gap-1"
+              title="Close terminal (Esc)"
             >
-              <ChevronDown className="w-6 h-6" />
+              <X className="w-3.5 h-3.5" />
+              <span>[ ESC: COLLAPSE ]</span>
             </button>
 
             <div className="text-center min-w-0 px-2">
-              <p className="font-sans text-[10px] tracking-widest uppercase text-kraft font-medium truncate">
-                {searchQuery ? 'PLAYING FROM SEARCH' : 'PLAYING FROM QUEUE'}
-              </p>
-              <p className="font-sans text-xs text-paper/90 font-semibold truncate max-w-[220px]">
-                {activeTrack.album || activeTrack.artist}
-              </p>
+              <span className="text-[11px] text-accent font-bold">
+                $ now_playing --active
+              </span>
             </div>
 
             <button
               onClick={scrollToQueue}
-              className="p-2 -mr-2 text-paper/80 hover:text-paper active:scale-90 transition-all rounded-full hover:bg-white/5"
-              title="View Queue"
+              className="px-2 py-1 bg-substrate border border-scribe hover:border-accent text-kraft hover:text-accent transition-colors text-xs flex items-center gap-1"
+              title="Inspect queue"
             >
-              <ListMusic className="w-5 h-5" />
+              <ListMusic className="w-3.5 h-3.5" />
+              <span>[ QUEUE ]</span>
             </button>
           </header>
 
-          {/* Large Spinning Circular Vinyl Disc */}
-          <div className="w-full flex items-center justify-center my-auto py-6 sm:py-8">
-            <div className="relative w-[76vw] h-[76vw] max-w-[340px] max-h-[340px] sm:max-w-[380px] sm:max-h-[380px] rounded-full p-2 bg-lacquer/80 border border-scribe shadow-2xl flex items-center justify-center flex-shrink-0">
-              {/* Outer Micro-Grooved Vinyl Body */}
-              <div
-                ref={discRef}
-                className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center shadow-inner"
-              >
-                {/* Center Label Masked Album Art */}
-                <div className="w-[50%] h-[50%] rounded-full overflow-hidden relative shadow-md border border-paper/10">
-                  <img
-                    src={activeTrack.thumbnailUrl}
-                    alt={activeTrack.title}
-                    className="w-full h-full object-cover rounded-full"
-                  />
+          {/* ASCII-Framed Vinyl Output Panel */}
+          <div className="border border-scribe bg-substrate p-4 sm:p-6 mb-6">
+            <div className="text-[11px] text-kraft border-b border-scribe pb-2 mb-4 flex items-center justify-between">
+              <span className="text-accent font-bold">┌── [ VINYL_STREAM_OUTPUT ] ──┐</span>
+              <span className="tabular-nums">FPS: 60 // SYNC: LOCKED</span>
+            </div>
+
+            {/* Large Spinning Circular Vinyl Disc */}
+            <div className="w-full flex items-center justify-center py-4">
+              <div className="relative w-56 h-56 sm:w-72 sm:h-72 p-2 bg-black border border-accent/40 flex items-center justify-center flex-shrink-0">
+                <div
+                  ref={discRef}
+                  className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center border border-scribe"
+                >
+                  {/* Center Label Masked Album Art */}
+                  <div className="w-[48%] h-[48%] rounded-full overflow-hidden relative border border-scribe/80">
+                    <img
+                      src={activeTrack.thumbnailUrl}
+                      alt={activeTrack.title}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+
+                  {/* Glare Overlay */}
+                  <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-40 mix-blend-screen" />
+
+                  {/* Center Spindle Hole */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black border border-accent/60" />
                 </div>
-
-                {/* Anisotropic Specular Glare Overlay */}
-                <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-50 mix-blend-screen" />
-
-                {/* Center Spindle Hole */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-lacquer border border-paper/40 shadow-inner" />
               </div>
             </div>
           </div>
 
-          {/* Track Identity Details + Like Button */}
-          <div className="w-full mb-6 flex items-start justify-between gap-4">
+          {/* Track Metadata + Like Command */}
+          <div className="border border-scribe bg-substrate p-4 mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h1 className="font-display font-bold text-2xl sm:text-3xl text-paper tracking-tight truncate leading-tight">
+              <div className="text-[10px] text-kraft uppercase tracking-wider mb-0.5">
+                &gt; RECORDING_INFO:
+              </div>
+              <h1 className="font-bold text-base sm:text-lg text-paper truncate">
                 {activeTrack.title}
               </h1>
-              <p className="font-sans text-base text-kraft truncate mt-1">
-                {activeTrack.artist}
+              <p className="text-xs text-accent truncate mt-0.5">
+                ARTIST: {activeTrack.artist}
               </p>
+              {activeTrack.album && (
+                <p className="text-[11px] text-kraft truncate mt-0.5">
+                  ALBUM:  {activeTrack.album}
+                </p>
+              )}
             </div>
 
             <button
               onClick={() => toggleLike(activeTrack)}
-              className="p-2 text-kraft hover:text-paper transition-colors rounded-full hover:bg-white/5 flex-shrink-0"
-              title={isTrackLiked ? 'Unlike' : 'Like'}
+              className={`px-2.5 py-1.5 border text-xs flex items-center gap-1.5 transition-colors ${
+                isTrackLiked
+                  ? 'border-accent bg-accent/15 text-accent font-bold'
+                  : 'border-scribe bg-surface text-kraft hover:text-paper hover:border-scribe/80'
+              }`}
+              title={isTrackLiked ? 'Remove from liked songs' : 'Save to liked songs'}
             >
-              <Heart
-                className={`w-6 h-6 transition-colors ${
-                  isTrackLiked ? 'fill-accent text-accent' : 'text-kraft/70 hover:text-paper'
-                }`}
-              />
+              <Heart className={`w-3.5 h-3.5 ${isTrackLiked ? 'fill-accent' : ''}`} />
+              <span>{isTrackLiked ? '[ LIKED ]' : '[ LIKE ]'}</span>
             </button>
           </div>
 
-          {/* Scrubbable Progress Bar */}
-          <div className="w-full mb-6">
+          {/* Terminal Scrub Bar */}
+          <div className="border border-scribe bg-substrate p-3 mb-4">
             <div
               ref={trackContainerRef}
               onMouseDown={onMouseDown}
               onMouseEnter={() => setIsScrubHovered(true)}
               onMouseLeave={() => setIsScrubHovered(false)}
-              className="relative w-full h-6 flex items-center cursor-pointer group/track"
+              className="relative w-full h-5 flex items-center cursor-pointer group/track"
             >
-              {/* Rail Base */}
-              <div className="w-full h-1 bg-white/15 rounded-full overflow-hidden transition-[height] duration-150 group-hover/track:h-1.5">
-                {/* Active Progress Fill */}
+              <div className="w-full h-[2px] bg-scribe overflow-hidden">
                 <div
                   ref={fillRef}
-                  className="h-full bg-paper rounded-full"
+                  className="h-full bg-accent"
                   style={{ width: '0%' }}
                 />
               </div>
 
-              {/* Scrub Handle Knob */}
               <div
                 ref={handleRef}
-                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-paper shadow-md transition-transform duration-100 ${
-                  isScrubHovered ? 'scale-100 opacity-100' : 'scale-0 opacity-0 group-hover/track:scale-100 group-hover/track:opacity-100'
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-3 bg-accent border border-black ${
+                  isScrubHovered ? 'opacity-100' : 'opacity-0 group-hover/track:opacity-100'
                 }`}
                 style={{ left: '0%' }}
               />
             </div>
 
-            {/* Time Indicators */}
-            <div className="w-full flex items-center justify-between text-xs font-sans tabular-nums text-kraft mt-1">
+            <div className="w-full flex items-center justify-between text-[11px] tabular-nums text-kraft mt-1">
               <span ref={currentTimeTextRef}>0:00</span>
+              <span className="text-accent text-[10px]">SEEK_BAR</span>
               <span ref={totalTimeTextRef}>0:00</span>
             </div>
           </div>
 
-          {/* Transport Controls Row */}
-          <div className="w-full flex items-center justify-between gap-4 mb-6">
+          {/* TUI Keypad Transport Controls */}
+          <div className="border border-scribe bg-substrate p-3 mb-4 flex items-center justify-between gap-2">
             <button
               onClick={toggleShuffle}
-              className={`p-2 transition-colors rounded-full hover:bg-white/5 ${
-                isShuffle ? 'text-accent' : 'text-kraft/70 hover:text-paper'
+              className={`px-2 py-1 text-xs border transition-colors ${
+                isShuffle
+                  ? 'border-accent bg-accent/20 text-accent font-bold'
+                  : 'border-scribe text-kraft hover:text-paper'
               }`}
-              title={isShuffle ? 'Shuffle active' : 'Shuffle inactive'}
+              title="Toggle shuffle"
             >
-              <Shuffle className="w-5 h-5" />
+              [SHUF]
             </button>
 
-            <button
-              onClick={previousTrack}
-              className="text-paper hover:text-accent active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
-              title="Previous track"
-            >
-              <SkipBack className="w-7 h-7 fill-current" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={previousTrack}
+                className="px-2.5 py-1 bg-surface border border-scribe hover:border-accent text-paper hover:text-accent text-xs font-bold transition-colors"
+                title="Previous track"
+              >
+                [&lt;&lt; PREV]
+              </button>
 
-            <button
-              onClick={togglePlay}
-              className="w-16 h-16 rounded-full bg-paper text-lacquer hover:bg-white active:scale-95 transition-all shadow-xl flex items-center justify-center"
-              title={isPlaying ? 'Pause' : 'Play'}
-            >
-              <span ref={playIconRef} className="flex items-center justify-center">
-                {isPlaying ? (
-                  <Pause className="w-7 h-7 fill-current" />
-                ) : (
-                  <Play className="w-7 h-7 fill-current translate-x-0.5" />
-                )}
-              </span>
-            </button>
+              <button
+                onClick={togglePlay}
+                className="px-4 py-1.5 bg-accent text-lacquer hover:bg-accent-hover text-xs font-bold transition-colors"
+                title={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isPlaying ? '[ || PAUSE ]' : '[ ▶ PLAY ]'}
+              </button>
 
-            <button
-              onClick={nextTrack}
-              className="text-paper hover:text-accent active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
-              title="Next track"
-            >
-              <SkipForward className="w-7 h-7 fill-current" />
-            </button>
+              <button
+                onClick={nextTrack}
+                className="px-2.5 py-1 bg-surface border border-scribe hover:border-accent text-paper hover:text-accent text-xs font-bold transition-colors"
+                title="Next track"
+              >
+                [NEXT &gt;&gt;]
+              </button>
+            </div>
 
             <button
               onClick={cycleRepeatMode}
-              className={`p-2 transition-colors rounded-full hover:bg-white/5 ${
-                repeatMode !== 'none' ? 'text-accent' : 'text-kraft/70 hover:text-paper'
+              className={`px-2 py-1 text-xs border transition-colors ${
+                repeatMode !== 'none'
+                  ? 'border-accent bg-accent/20 text-accent font-bold'
+                  : 'border-scribe text-kraft hover:text-paper'
               }`}
-              title={`Repeat: ${repeatMode}`}
+              title={`Repeat mode: ${repeatMode}`}
             >
-              <Repeat className="w-5 h-5" />
+              [RPT:{repeatMode.toUpperCase()}]
             </button>
           </div>
 
-          {/* Secondary Volume Row */}
-          <div className="w-full flex items-center justify-between gap-3 px-2 py-2 border-b border-scribe/50 mb-8">
+          {/* Volume Control Row */}
+          <div className="border border-scribe bg-substrate p-3 mb-6 flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleMute}
-                className="text-kraft hover:text-paper transition-colors p-1"
+                className="text-kraft hover:text-paper transition-colors"
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || currentVol === 0 ? (
-                  <VolumeX className="w-4 h-4 text-kraft/50" />
+                  <VolumeX className="w-3.5 h-3.5 text-kraft/50" />
                 ) : (
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-3.5 h-3.5" />
                 )}
               </button>
               <input
@@ -539,100 +528,81 @@ export const ExpandedNowPlaying: React.FC = () => {
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
                 className="w-24 sm:w-32 h-1 cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #F2F4F8 ${currentVol * 100}%, #20232B ${currentVol * 100}%)`,
+                  background: `linear-gradient(to right, #22C55E ${currentVol * 100}%, #1C261D ${currentVol * 100}%)`,
                 }}
               />
+              <span className="tabular-nums text-kraft text-[10px]">
+                {Math.round(currentVol * 100)}%
+              </span>
             </div>
 
-            {/* Segmented Switcher between Up Next Queue and Lyrics */}
-            <div className="flex items-center gap-1 bg-substrate/80 p-0.5 rounded-lg border border-scribe text-xs font-sans">
+            {/* Sheet Tabs */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setActiveSheetTab('queue')}
-                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 transition-colors ${
                   activeSheetTab === 'queue'
-                    ? 'bg-paper text-lacquer font-semibold shadow-sm'
-                    : 'text-kraft hover:text-paper'
+                    ? 'bg-accent text-lacquer font-bold'
+                    : 'bg-surface border border-scribe text-kraft hover:text-paper'
                 }`}
               >
-                <ListMusic className="w-3.5 h-3.5" />
-                <span>Queue</span>
+                [ QUEUE ({queue.length}) ]
               </button>
               <button
                 onClick={() => setActiveSheetTab('lyrics')}
-                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 transition-colors ${
                   activeSheetTab === 'lyrics'
-                    ? 'bg-paper text-lacquer font-semibold shadow-sm'
-                    : 'text-kraft hover:text-paper'
+                    ? 'bg-accent text-lacquer font-bold'
+                    : 'bg-surface border border-scribe text-kraft hover:text-paper'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5" />
-                <span>Lyrics</span>
+                [ LYRICS ]
               </button>
             </div>
           </div>
 
           {/* ─────────────────────────────────────────────────────────────
-              BELOW-THE-FOLD SHEET CONTENT
+              BELOW-THE-FOLD TUI INSPECTION SHEET
              ───────────────────────────────────────────────────────────── */}
           <section ref={queueSectionRef} className="w-full">
             {activeSheetTab === 'queue' ? (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display font-bold text-lg text-paper tracking-tight">
-                    Up Next
-                  </h2>
-                  <span className="font-sans text-xs text-kraft tabular-nums">
-                    {queue.length} tracks
-                  </span>
+              <div className="border border-scribe bg-substrate">
+                <div className="text-[11px] text-kraft border-b border-scribe p-2.5 bg-surface flex items-center justify-between">
+                  <span className="text-accent font-bold">&gt; UP_NEXT_QUEUE:</span>
+                  <span className="tabular-nums">COUNT: {queue.length} TRACKS</span>
                 </div>
 
-                <div className="flex flex-col divide-y divide-scribe/40 rounded-xl bg-substrate/50 border border-scribe/60 p-2 sm:p-3 shadow-md">
+                <div className="divide-y divide-scribe">
                   {queue.map((track, idx) => {
                     const isCurrent = idx === currentTrackIndex;
                     return (
                       <button
                         key={`${track.videoId}-${idx}`}
                         onClick={() => playTrackIndex(idx)}
-                        className={`w-full flex items-center gap-3 p-2.5 text-left rounded-lg transition-colors group ${
+                        className={`w-full flex items-center gap-3 p-2.5 text-left transition-colors ${
                           isCurrent
-                            ? 'bg-accent/15 text-paper'
-                            : 'hover:bg-white/5 text-kraft hover:text-paper'
+                            ? 'bg-surface text-accent border-l-2 border-accent'
+                            : 'hover:bg-surface/60 text-paper'
                         }`}
                       >
-                        {/* Track Number / Play Indicator */}
-                        <span className="font-sans text-xs tabular-nums w-5 text-center flex-shrink-0">
-                          {isCurrent && isPlaying ? (
-                            <span className="text-accent font-bold animate-pulse">▶</span>
-                          ) : (
-                            idx + 1
-                          )}
+                        <span className="text-xs tabular-nums w-5 text-center flex-shrink-0 text-kraft">
+                          {isCurrent && isPlaying ? '>' : idx + 1}
                         </span>
 
-                        {/* Small Thumbnail */}
-                        <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 bg-lacquer border border-scribe">
-                          <img
-                            src={track.thumbnailUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Title & Artist */}
                         <div className="min-w-0 flex-1">
                           <p
-                            className={`font-sans text-sm font-semibold truncate ${
-                              isCurrent ? 'text-accent' : 'text-paper group-hover:text-paper'
+                            className={`text-xs font-semibold truncate ${
+                              isCurrent ? 'text-accent' : 'text-paper'
                             }`}
                           >
                             {track.title}
                           </p>
-                          <p className="font-sans text-xs text-kraft truncate mt-0.5">
+                          <p className="text-[10px] text-kraft truncate mt-0.5">
                             {track.artist}
                           </p>
                         </div>
 
-                        {/* Duration */}
-                        <span className="font-sans text-xs tabular-nums text-kraft/80 flex-shrink-0 ml-2">
+                        <span className="text-xs tabular-nums text-kraft flex-shrink-0 ml-2">
                           {formatTime(track.duration)}
                         </span>
                       </button>
@@ -641,42 +611,34 @@ export const ExpandedNowPlaying: React.FC = () => {
                 </div>
               </div>
             ) : (
-              /* Lyrics Panel */
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display font-bold text-lg text-paper tracking-tight">
-                    Lyrics
-                  </h2>
-                  <span className="font-sans text-xs text-kraft">
-                    Powered by lrclib.net
-                  </span>
+              /* Terminal Lyrics Output */
+              <div className="border border-scribe bg-substrate">
+                <div className="text-[11px] text-kraft border-b border-scribe p-2.5 bg-surface flex items-center justify-between">
+                  <span className="text-accent font-bold">&gt; lrclib_fetch --stdout:</span>
+                  <span>STATUS: {lyricsData.loading ? 'LOADING...' : lyricsData.found ? 'OK' : 'N/A'}</span>
                 </div>
 
-                {lyricsData.loading ? (
-                  <div className="py-20 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 animate-pulse">
-                    Locating lyrics...
-                  </div>
-                ) : lyricsData.instrumental ? (
-                  <div className="py-16 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 p-6">
-                    <p className="text-paper font-semibold">Instrumental Composition</p>
-                    <p className="text-xs text-kraft/70 mt-1">
-                      This recording does not contain vocal lyrics.
-                    </p>
-                  </div>
-                ) : lyricsData.plainLyrics ? (
-                  <div className="rounded-xl bg-substrate/50 border border-scribe/60 p-5 sm:p-7 shadow-md">
-                    <pre className="font-sans text-base sm:text-lg text-paper/90 leading-relaxed whitespace-pre-wrap select-text font-normal">
+                <div className="p-4 sm:p-6">
+                  {lyricsData.loading ? (
+                    <div className="py-16 text-center text-kraft text-xs animate-pulse">
+                      [SYS: QUERYING LRCLIB API...]
+                    </div>
+                  ) : lyricsData.instrumental ? (
+                    <div className="py-12 text-center text-kraft text-xs border border-dashed border-scribe p-6">
+                      <p className="text-paper font-bold">[!] INSTRUMENTAL RECORDING</p>
+                      <p className="text-kraft/70 mt-1">This composition contains zero vocal lyrics.</p>
+                    </div>
+                  ) : lyricsData.plainLyrics ? (
+                    <pre className="text-xs sm:text-sm text-paper/90 leading-relaxed whitespace-pre-wrap select-text font-mono">
                       {lyricsData.plainLyrics}
                     </pre>
-                  </div>
-                ) : (
-                  <div className="py-16 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 p-6">
-                    <p className="text-paper font-semibold">Lyrics not available</p>
-                    <p className="text-xs text-kraft/70 mt-1">
-                      No registered lyrics found for this recording.
-                    </p>
-                  </div>
-                )}
+                  ) : (
+                    <div className="py-12 text-center text-kraft text-xs border border-dashed border-scribe p-6">
+                      <p className="text-paper font-bold">[!] LYRICS NOT AVAILABLE</p>
+                      <p className="text-kraft/70 mt-1">No registered lyrics found for this track.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </section>

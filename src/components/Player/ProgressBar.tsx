@@ -76,11 +76,11 @@ export const ProgressBar: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex items-center gap-3 select-none">
+    <div className="w-full flex items-center gap-2.5 select-none font-mono">
       {/* Current Elapsed Time */}
       <span
         ref={currentTimeTextRef}
-        className="font-sans font-medium text-xs tabular-nums text-kraft min-w-[36px] text-right"
+        className="text-[11px] tabular-nums text-kraft min-w-[32px] text-right"
       >
         0:00
       </span>
@@ -91,23 +91,23 @@ export const ProgressBar: React.FC = () => {
         onMouseDown={onMouseDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="relative flex-1 h-4 flex items-center cursor-pointer group/track"
+        className="relative flex-1 h-3.5 flex items-center cursor-pointer group/track"
       >
-        {/* Rail Base */}
-        <div className="w-full h-[2px] bg-scribe rounded-full overflow-hidden transition-[height] duration-150 group-hover/track:h-1">
+        {/* Rail Base: Sharp Single-Pixel or 2px Bar */}
+        <div className="w-full h-[2px] bg-scribe overflow-hidden transition-[height] duration-100 group-hover/track:h-1">
           {/* Active Progress Fill */}
           <div
             ref={fillRef}
-            className="h-full bg-ochre rounded-full"
+            className="h-full bg-accent"
             style={{ width: '0%' }}
           />
         </div>
 
-        {/* Needle Scrub Knob */}
+        {/* Square Terminal Scrub Handle */}
         <div
           ref={handleRef}
-          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-paper border border-ochre transition-transform duration-100 ${
-            isHovered ? 'scale-100 opacity-100' : 'scale-0 opacity-0 group-hover/track:scale-100 group-hover/track:opacity-100'
+          className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2.5 bg-accent border border-black transition-opacity duration-100 ${
+            isHovered ? 'opacity-100' : 'opacity-0 group-hover/track:opacity-100'
           }`}
           style={{ left: '0%' }}
         />
@@ -116,7 +116,7 @@ export const ProgressBar: React.FC = () => {
       {/* Total Duration */}
       <span
         ref={totalTimeTextRef}
-        className="font-sans font-medium text-xs tabular-nums text-kraft min-w-[36px]"
+        className="text-[11px] tabular-nums text-kraft min-w-[32px]"
       >
         0:00
       </span>
