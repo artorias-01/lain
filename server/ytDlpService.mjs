@@ -9,16 +9,25 @@ const resolvedUrlCache = new Map();
 const inFlightResolutions = new Map();
 
 /**
- * Returns youtubedl instance configured with local binary if present
+ * Returns youtubedl instance configured with local binary if present,
+ * and transparently translates ytmsearch to the underlying music-focused search target.
  */
 export function getYtDlpClient() {
   const localBinExe = path.resolve(process.cwd(), 'bin', 'yt-dlp.exe');
-  if (fs.existsSync(localBinExe)) return youtubedl.create(localBinExe);
+  const baseClient = fs.existsSync(localBinExe) ? youtubedl.create(localBinExe) : youtubedl;
 
-  const localBin = path.resolve(process.cwd(), 'bin', 'yt-dlp');
-  if (fs.existsSync(localBin)) return youtubedl.create(localBin);
-
-  return youtubedl;
+  return async (targetUrl, flags = {}, options = {}) => {
+    let resolvedTarget = targetUrl;
+    if (typeof targetUrl === 'string' && targetUrl.startsWith('ytmsearch')) {
+      const match = targetUrl.match(/^ytmsearch(\d+)?:\s*(.*)$/);
+      if (match) {
+        const count = match[1] || '15';
+        const q = match[2];
+        resolvedTarget = `ytsearch${count}:${q}`;
+      }
+    }
+    return baseClient(resolvedTarget, flags, options);
+  };
 }
 
 /**

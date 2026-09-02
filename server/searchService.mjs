@@ -94,13 +94,12 @@ export async function searchTracks(rawQuery) {
     return { ...cached.data, fromCache: true };
   }
 
-  // 2. Query youtube-dl-exec directly
+  // 2. Query youtube-dl-exec with ytmsearch prefix (music catalog)
   try {
     const yt = getYtDlpClient();
-    const searchResult = await yt(`ytsearch15:${query}`, {
+    const searchResult = await yt(`ytmsearch15:${query}`, {
       dumpSingleJson: true,
       flatPlaylist: true,
-      defaultSearch: 'ytsearch',
       noCheckCertificates: true,
     });
 
@@ -120,8 +119,13 @@ export async function searchTracks(rawQuery) {
       return emptyResult;
     }
 
+    // Belt and suspenders filter: exclude livestreams, clips under 30s, and multi-hour mixes over 30min
     const validTracks = entries
-      .filter((item) => Boolean(item && item.id && !item.is_live))
+      .filter((item) => {
+        if (!item || !item.id || item.is_live) return false;
+        const d = item.duration || 0;
+        return d >= 30 && d <= 1800;
+      })
       .map((item, idx) => {
         const vid = item.id;
         const durationSec = Math.round(item.duration || 180);
@@ -143,7 +147,7 @@ export async function searchTracks(rawQuery) {
     const finalResult = {
       tracks: validTracks.length > 0 ? validTracks : STARTER_QUEUE,
       hasApiKey: false,
-      message: validTracks.length === 0 ? 'No playable audio tracks found.' : undefined,
+      message: validTracks.length === 0 ? 'No playable audio tracks found matching criteria.' : undefined,
     };
 
     // Cache the result
