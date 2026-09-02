@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { ProgressBar } from './ProgressBar';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX, Repeat, Shuffle } from 'lucide-react';
-import gsap from 'gsap';
+import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX, Repeat, Shuffle, Maximize2 } from 'lucide-react';
 import anime from 'animejs';
 
 export const SpotifyPlayerBar: React.FC = () => {
@@ -20,53 +20,26 @@ export const SpotifyPlayerBar: React.FC = () => {
     cycleRepeatMode,
     isShuffle,
     toggleShuffle,
+    setIsNowPlayingExpanded,
   } = usePlayerStore();
 
   const discRef = useRef<HTMLDivElement>(null);
-  const spinTweenRef = useRef<gsap.core.Tween | null>(null);
   const playIconRef = useRef<HTMLSpanElement>(null);
 
-  // GSAP continuous restart-safe spinning loop for the vinyl disc
+  // Synchronized continuous vinyl spinning
   useEffect(() => {
-    if (!discRef.current) return;
+    setVinylPlaying(isPlaying);
+  }, [isPlaying]);
 
-    spinTweenRef.current = gsap.to(discRef.current, {
-      rotation: '+=360',
-      duration: 3.2,
-      repeat: -1,
-      ease: 'none',
-      paused: true,
-    });
-
+  useEffect(() => {
+    const unregister = registerVinylElement(discRef.current);
     return () => {
-      spinTweenRef.current?.kill();
+      unregister();
     };
   }, []);
 
-  // Inertial acceleration on play, friction deceleration on pause
+  // anime.js micro-interaction: quick icon pop on state toggle
   useEffect(() => {
-    const tween = spinTweenRef.current;
-    if (!tween) return;
-
-    if (isPlaying) {
-      tween.play();
-      gsap.to(tween, {
-        timeScale: 1,
-        duration: 0.75,
-        ease: 'power2.in',
-      });
-    } else {
-      gsap.to(tween, {
-        timeScale: 0,
-        duration: 0.95,
-        ease: 'power2.out',
-        onComplete: () => {
-          tween.pause();
-        },
-      });
-    }
-
-    // anime.js micro-interaction: quick icon pop on state toggle
     if (playIconRef.current) {
       anime.remove(playIconRef.current);
       anime({
@@ -82,11 +55,22 @@ export const SpotifyPlayerBar: React.FC = () => {
   const currentVol = isMuted ? 0 : volume;
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 h-20 bg-substrate border-t border-scribe px-4 sm:px-8 flex items-center justify-between gap-4 z-50 select-none">
-      {/* Left Column: Spinning 2D Vinyl Disc Accent & Track Identity */}
-      <div className="flex items-center gap-3.5 min-w-0 w-1/4 sm:w-1/3">
+    <footer className="fixed bottom-0 left-0 right-0 h-20 bg-substrate border-t border-scribe px-4 sm:px-8 flex items-center justify-between gap-4 z-40 select-none">
+      {/* Left Column: Tappable Mini Player Art & Track Identity (Expands Now Playing) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setIsNowPlayingExpanded(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            setIsNowPlayingExpanded(true);
+          }
+        }}
+        className="flex items-center gap-3.5 min-w-0 w-1/4 sm:w-1/3 cursor-pointer group/minibar py-1.5 px-1 rounded-lg hover:bg-white/[0.03] transition-colors"
+        title="Expand Now Playing"
+      >
         {/* The Signature Vinyl Disc */}
-        <div className="relative w-12 h-12 rounded-full overflow-hidden bg-lacquer border border-scribe flex-shrink-0 shadow-md">
+        <div className="relative w-12 h-12 rounded-full overflow-hidden bg-lacquer border border-scribe flex-shrink-0 shadow-md group-hover/minibar:border-ochre/50 transition-colors">
           <div
             ref={discRef}
             className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center"
@@ -108,11 +92,14 @@ export const SpotifyPlayerBar: React.FC = () => {
           </div>
         </div>
 
-        {/* Track Title & Artist */}
+        {/* Track Title & Artist with Expand Indicator */}
         <div className="min-w-0 flex-1">
-          <h2 className="font-display font-semibold text-sm text-paper truncate tracking-tight">
-            {activeTrack.title}
-          </h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="font-display font-semibold text-sm text-paper truncate tracking-tight group-hover/minibar:text-ochre transition-colors">
+              {activeTrack.title}
+            </h2>
+            <Maximize2 className="w-3 h-3 text-kraft/50 group-hover/minibar:text-ochre opacity-0 group-hover/minibar:opacity-100 transition-opacity flex-shrink-0" />
+          </div>
           <p className="font-sans text-xs text-kraft truncate mt-0.5">
             {activeTrack.artist}
           </p>

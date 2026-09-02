@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MainTrackView } from './components/Player/MainTrackView';
 import { SpotifyPlayerBar } from './components/Player/SpotifyPlayerBar';
+import { ExpandedNowPlaying } from './components/Player/ExpandedNowPlaying';
 import { initLenisInstance } from './lib/lenis';
 
 export const App: React.FC = () => {
@@ -19,6 +20,9 @@ export const App: React.FC = () => {
 
       {/* Fixed Flush-Rule Now-Playing Bar */}
       <SpotifyPlayerBar />
+
+      {/* Full-screen Expandable Now Playing View with Synchronized Vinyl */}
+      <ExpandedNowPlaying />
     </div>
   );
 };

@@ -19,8 +19,11 @@ interface PlayerState {
   apiKeyMissing: boolean;
   searchMessage: string | null;
   trackErrorMessage: string | null;
+  isNowPlayingExpanded: boolean;
 
   // Actions
+  setIsNowPlayingExpanded: (expanded: boolean) => void;
+  toggleNowPlayingExpanded: () => void;
   playTrackIndex: (index: number) => void;
   playTrack: (track: TrackItem) => void;
   togglePlay: () => void;
@@ -88,6 +91,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => {
     apiKeyMissing: false,
     searchMessage: null,
     trackErrorMessage: null,
+    isNowPlayingExpanded: false,
+
+    setIsNowPlayingExpanded: (expanded: boolean) => set({ isNowPlayingExpanded: expanded }),
+    toggleNowPlayingExpanded: () => set((state) => ({ isNowPlayingExpanded: !state.isNowPlayingExpanded })),
 
     playTrackIndex: (index: number) => {
       const { queue } = get();
