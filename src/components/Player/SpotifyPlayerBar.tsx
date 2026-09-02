@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { ProgressBar } from './ProgressBar';
-import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
+import { PixelVinyl3D } from '../Vinyl3D/PixelVinyl3D';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Volume1, VolumeX, Repeat, Shuffle, Maximize2 } from 'lucide-react';
 
 export const SpotifyPlayerBar: React.FC = () => {
@@ -22,25 +22,11 @@ export const SpotifyPlayerBar: React.FC = () => {
     setIsNowPlayingExpanded,
   } = usePlayerStore();
 
-  const discRef = useRef<HTMLDivElement>(null);
-
-  // Synchronized continuous vinyl spinning
-  useEffect(() => {
-    setVinylPlaying(isPlaying);
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const unregister = registerVinylElement(discRef.current);
-    return () => {
-      unregister();
-    };
-  }, []);
-
   const currentVol = isMuted ? 0 : volume;
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 h-16 bg-substrate border-t border-scribe px-4 sm:px-6 flex items-center justify-between gap-4 z-40 select-none font-mono">
-      {/* Left Column: Tappable Mini Player Art & Metadata (Expands TUI View) */}
+    <footer className="fixed bottom-0 left-0 right-0 h-16 bg-retro-panel border-t-2 border-retro-border px-3 sm:px-6 flex items-center justify-between gap-3 z-40 select-none font-mono">
+      {/* Left Column: Mini Cartridge & Track Info (Expands HUD) */}
       <div
         role="button"
         tabIndex={0}
@@ -50,39 +36,25 @@ export const SpotifyPlayerBar: React.FC = () => {
             setIsNowPlayingExpanded(true);
           }
         }}
-        className="flex items-center gap-3 min-w-0 w-1/4 sm:w-1/3 cursor-pointer group/minibar py-1 px-1 border border-transparent hover:border-scribe bg-transparent hover:bg-surface transition-colors"
-        title="[ EXPAND NOW PLAYING ]"
+        className="flex items-center gap-2.5 min-w-0 w-1/4 sm:w-1/3 cursor-pointer group py-1 px-1 pixel-panel-inset hover:border-retro-cyan transition-none"
+        title="Expand Console HUD"
       >
-        {/* Crisp Square-Framed Mini Vinyl */}
-        <div className="relative w-10 h-10 p-0.5 bg-black border border-accent/40 flex items-center justify-center flex-shrink-0 group-hover/minibar:border-accent transition-colors">
-          <div
-            ref={discRef}
-            className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center border border-scribe"
-          >
-            {/* Center Label Masked Album Art */}
-            <div className="w-[50%] h-[50%] rounded-full overflow-hidden relative">
-              <img
-                src={activeTrack.thumbnailUrl}
-                alt=""
-                className="w-full h-full object-cover rounded-full"
-              />
-            </div>
-
-            {/* Specular Glare Overlay */}
-            <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-40 mix-blend-screen" />
-
-            {/* Spindle Hole */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-black border border-accent/50" />
-          </div>
+        {/* Mini 3D Vinyl Preview */}
+        <div className="w-10 h-10 overflow-hidden flex-shrink-0 bg-black border border-retro-border flex items-center justify-center">
+          <PixelVinyl3D
+            thumbnailUrl={activeTrack.thumbnailUrl}
+            isPlaying={isPlaying}
+            size={40}
+          />
         </div>
 
         {/* Track Title & Artist */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <h2 className="text-xs font-semibold text-paper truncate group-hover/minibar:text-accent transition-colors">
+          <div className="flex items-center gap-1">
+            <h2 className="text-xs font-bold text-paper truncate group-hover:text-retro-cyan">
               {activeTrack.title}
             </h2>
-            <Maximize2 className="w-3 h-3 text-accent opacity-0 group-hover/minibar:opacity-100 transition-opacity flex-shrink-0" />
+            <Maximize2 className="w-3 h-3 text-retro-cyan opacity-0 group-hover:opacity-100 transition-none flex-shrink-0" />
           </div>
           <p className="text-[10px] text-kraft truncate mt-0.5">
             {activeTrack.artist}
@@ -90,78 +62,78 @@ export const SpotifyPlayerBar: React.FC = () => {
         </div>
       </div>
 
-      {/* Center Column: Transport Controls & Scrubbable Progress Bar */}
+      {/* Center Column: Chunky Transport Buttons & Segmented HUD Bar */}
       <div className="flex flex-col items-center justify-center gap-1 flex-1 max-w-xl">
-        {/* Transport Buttons */}
-        <div className="flex items-center gap-3">
+        {/* Tactile 3D Buttons */}
+        <div className="flex items-center gap-2 font-pixel">
           <button
             onClick={toggleShuffle}
-            className={`px-1 py-0.5 text-xs transition-colors ${
-              isShuffle ? 'text-accent font-bold' : 'text-kraft/60 hover:text-kraft'
+            className={`pixel-btn px-1.5 py-1 text-[9px] ${
+              isShuffle ? 'text-retro-cyan border-retro-cyan font-bold' : 'text-kraft'
             }`}
-            title={isShuffle ? 'Shuffle active' : 'Shuffle inactive'}
+            title={isShuffle ? 'Shuffle enabled' : 'Shuffle disabled'}
           >
             <Shuffle className="w-3 h-3" />
           </button>
 
           <button
             onClick={previousTrack}
-            className="text-kraft hover:text-paper active:scale-95 transition-all p-1"
+            className="pixel-btn px-2 py-1 text-xs text-paper"
             title="Previous track"
           >
-            <SkipBack className="w-3.5 h-3.5 fill-current" />
+            <SkipBack className="w-3 h-3 fill-current" />
           </button>
 
           <button
             onClick={togglePlay}
-            className="w-7 h-7 bg-accent text-lacquer flex items-center justify-center hover:bg-accent-hover active:scale-95 transition-all font-bold"
+            className="pixel-btn-accent px-3 py-1 text-xs"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
               <Pause className="w-3.5 h-3.5 fill-current" />
             ) : (
-              <Play className="w-3.5 h-3.5 fill-current translate-x-[1px]" />
+              <Play className="w-3.5 h-3.5 fill-current translate-x-[0.5px]" />
             )}
           </button>
 
           <button
             onClick={nextTrack}
-            className="text-kraft hover:text-paper active:scale-95 transition-all p-1"
+            className="pixel-btn px-2 py-1 text-xs text-paper"
             title="Next track"
           >
-            <SkipForward className="w-3.5 h-3.5 fill-current" />
+            <SkipForward className="w-3 h-3 fill-current" />
           </button>
 
           <button
             onClick={cycleRepeatMode}
-            className={`px-1 py-0.5 text-xs transition-colors ${
-              repeatMode !== 'none' ? 'text-accent font-bold' : 'text-kraft/60 hover:text-kraft'
+            className={`pixel-btn px-1.5 py-1 text-[9px] ${
+              repeatMode !== 'none' ? 'text-retro-cyan border-retro-cyan font-bold' : 'text-kraft'
             }`}
-            title={`Repeat: ${repeatMode}`}
+            title={`Repeat mode: ${repeatMode}`}
           >
             <Repeat className="w-3 h-3" />
           </button>
         </div>
 
-        {/* Minimal Progress Bar */}
+        {/* Segmented Progress HUD */}
         <div className="w-full max-w-md">
           <ProgressBar />
         </div>
       </div>
 
-      {/* Right Column: Volume Control */}
+      {/* Right Column: Console Audio Level */}
       <div className="flex items-center justify-end gap-2 w-1/4 sm:w-1/3">
         <button
           onClick={toggleMute}
-          className="text-kraft hover:text-paper transition-colors p-1"
+          className="pixel-btn p-1.5 text-kraft hover:text-paper"
           title={isMuted ? 'Unmute' : 'Mute'}
         >
           {isMuted || currentVol === 0 ? (
-            <VolumeX className="w-3.5 h-3.5 text-kraft/50" />
+            <VolumeX className="w-3.5 h-3.5 text-red-400" />
           ) : currentVol < 0.5 ? (
             <Volume1 className="w-3.5 h-3.5" />
           ) : (
-            <Volume2 className="w-3.5 h-3.5" />
+            <Volume2 className="w-3.5 h-3.5 text-retro-cyan" />
           )}
         </button>
 
@@ -172,10 +144,7 @@ export const SpotifyPlayerBar: React.FC = () => {
           step="0.01"
           value={currentVol}
           onChange={(e) => setVolume(parseFloat(e.target.value))}
-          className="w-16 sm:w-20 h-1 cursor-pointer"
-          style={{
-            background: `linear-gradient(to right, #22C55E ${currentVol * 100}%, #1C261D ${currentVol * 100}%)`,
-          }}
+          className="w-16 sm:w-20 h-2 cursor-pointer"
           title={`Volume: ${Math.round(currentVol * 100)}%`}
         />
       </div>

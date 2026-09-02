@@ -2,13 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useLibraryStore, Playlist } from '../../store/useLibraryStore';
 import { TrackItem } from '../../lib/nativeAudioEngine';
-import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
-import { extractDominantColor } from '../../lib/colorExtractor';
-import { Search, Play, X, Heart, Plus, Trash2, FolderPlus } from 'lucide-react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
+import { PixelVinyl3D } from '../Vinyl3D/PixelVinyl3D';
+import { Search, Play, Pause, X, Heart, Plus, Trash2, FolderPlus, Disc3 } from 'lucide-react';
 
 export const MainTrackView: React.FC = () => {
   const {
@@ -44,51 +39,7 @@ export const MainTrackView: React.FC = () => {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [activeMenuTrackId, setActiveMenuTrackId] = useState<string | null>(null);
 
-  const heroSectionRef = useRef<HTMLElement>(null);
-  const heroDiscContainerRef = useRef<HTMLDivElement>(null);
-  const heroDiscRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Synchronized Vinyl Rotation for Hero Disc
-  useEffect(() => {
-    setVinylPlaying(isPlaying);
-  }, [isPlaying]);
-
-  useEffect(() => {
-    const unregister = registerVinylElement(heroDiscRef.current);
-    return () => {
-      unregister();
-    };
-  }, []);
-
-  // Update dynamic accent theme when activeTrack changes
-  useEffect(() => {
-    if (activeTrack) {
-      extractDominantColor(activeTrack.thumbnailUrl, activeTrack.videoId);
-    }
-  }, [activeTrack?.videoId, activeTrack?.thumbnailUrl]);
-
-  // Snappy Scroll-interactive Hero Disc animation with Lenis-synced ScrollTrigger
-  useEffect(() => {
-    if (!heroSectionRef.current || !heroDiscContainerRef.current) return;
-
-    const ctx = gsap.context(() => {
-      gsap.to(heroDiscContainerRef.current, {
-        scrollTrigger: {
-          trigger: heroSectionRef.current,
-          start: 'top top',
-          end: 'bottom top+=60',
-          scrub: 0.3,
-        },
-        scale: 0.78,
-        y: -24,
-        opacity: 0.7,
-        ease: 'none',
-      });
-    });
-
-    return () => ctx.revert();
-  }, []);
 
   // Debounce search input by 400ms
   useEffect(() => {
@@ -148,135 +99,133 @@ export const MainTrackView: React.FC = () => {
   const currentPlaylist = playlists.find((p) => p.id === selectedPlaylistId) || playlists[0] || null;
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-36 select-none font-mono">
+    <main className="max-w-4xl mx-auto px-3 sm:px-6 pt-6 pb-36 select-none font-mono">
       {/* ─────────────────────────────────────────────────────────────
-          TUI TOP BAR / STATUS HEADER
+          1. RETRO TITLE-SCREEN MASTHEAD
          ───────────────────────────────────────────────────────────── */}
-      <header className="mb-6 border border-scribe bg-substrate p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-accent font-bold text-lg tracking-tight">LaIN</span>
-          <span className="terminal-cursor text-accent font-bold text-lg">_</span>
-          <span className="text-xs text-kraft ml-2 border-l border-scribe pl-2">
-            [SYS: AUDIO_CORE_ONLINE]
-          </span>
+      <header className="pixel-panel p-3.5 sm:p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-retro-panel">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-retro-cyan text-retro-bg flex items-center justify-center font-pixel text-xs border border-white">
+            16
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-pixel text-xl sm:text-2xl text-retro-cyan tracking-wider drop-shadow-[2px_2px_0px_#04060A]">
+                LaIN
+              </h1>
+              <span className="retro-cursor font-pixel text-sm text-retro-gold">_</span>
+            </div>
+            <p className="text-[10px] text-retro-border text-kraft tracking-widest mt-0.5">
+              16-BIT STEREO AUDIO CARTRIDGE // REV 2.0
+            </p>
+          </div>
         </div>
 
-        {/* TUI Bracketed Menu Navigation */}
-        <nav className="flex items-center gap-1 text-xs">
+        {/* Retro Game Menu Tab Navigation */}
+        <nav className="flex items-center gap-1.5 overflow-x-auto text-xs font-pixel py-1">
           <button
             onClick={() => setActiveTab('catalog')}
-            className={`px-2.5 py-1 transition-all ${
+            className={`px-2.5 py-1.5 transition-none ${
               activeTab === 'catalog'
-                ? 'bg-accent text-lacquer font-bold shadow-none'
-                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
+                ? 'pixel-btn-accent text-[10px]'
+                : 'pixel-btn text-[10px] text-kraft hover:text-paper'
             }`}
           >
-            [ 01: CATALOG ]
+            {activeTab === 'catalog' ? '▶ CATALOG' : '  CATALOG'}
           </button>
           <button
             onClick={() => setActiveTab('liked')}
-            className={`px-2.5 py-1 transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1.5 transition-none ${
               activeTab === 'liked'
-                ? 'bg-accent text-lacquer font-bold shadow-none'
-                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
+                ? 'pixel-btn-accent text-[10px]'
+                : 'pixel-btn text-[10px] text-kraft hover:text-paper'
             }`}
           >
-            <span>[ 02: LIKED ({likedTracks.length}) ]</span>
+            {activeTab === 'liked' ? `▶ LIKED (${likedTracks.length})` : `  LIKED (${likedTracks.length})`}
           </button>
           <button
             onClick={() => setActiveTab('playlists')}
-            className={`px-2.5 py-1 transition-all flex items-center gap-1 ${
+            className={`px-2.5 py-1.5 transition-none ${
               activeTab === 'playlists'
-                ? 'bg-accent text-lacquer font-bold shadow-none'
-                : 'text-kraft hover:text-paper hover:bg-surface border border-transparent hover:border-scribe'
+                ? 'pixel-btn-accent text-[10px]'
+                : 'pixel-btn text-[10px] text-kraft hover:text-paper'
             }`}
           >
-            <span>[ 03: PLAYLISTS ({playlists.length}) ]</span>
+            {activeTab === 'playlists' ? `▶ LISTS (${playlists.length})` : `  LISTS (${playlists.length})`}
           </button>
         </nav>
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
-          TUI ASCII-BORDERED HERO DISC WIDGET
+          2. 3D PIXELATED VINYL CARTRIDGE CENTERPIECE
          ───────────────────────────────────────────────────────────── */}
-      <section ref={heroSectionRef} className="mb-8 select-none">
-        <div className="border border-scribe bg-substrate p-4 sm:p-6 relative">
-          {/* Panel Header Label */}
-          <div className="flex items-center justify-between text-[11px] text-kraft border-b border-scribe pb-2.5 mb-4">
-            <span className="text-accent font-semibold flex items-center gap-1.5">
-              <span>┌──</span>
-              <span>[ WIDGET: VINYL_OUTPUT ]</span>
-              <span>──┐</span>
+      <section className="mb-8">
+        <div className="pixel-panel-cyan p-4 sm:p-5 relative bg-retro-panel">
+          {/* Cartridge Header Bar */}
+          <div className="flex items-center justify-between text-[10px] font-pixel text-retro-cyan border-b-2 border-retro-border pb-2.5 mb-4">
+            <span className="flex items-center gap-1.5">
+              <Disc3 className="w-3.5 h-3.5" />
+              <span>CARTRIDGE DISC: 01</span>
             </span>
-            <span className="tabular-nums">
-              STATUS: {isPlaying ? 'STREAMING [RUN]' : 'STANDBY [IDLE]'}
+            <span className="text-retro-gold">
+              {isPlaying ? '● PLAYING [PCM]' : '○ STANDBY [READY]'}
             </span>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 py-2">
-            {/* Vinyl Disc within Crisp Single-Pixel Ring */}
+            {/* Real 3D Pixelated Vinyl Canvas */}
             <div
-              ref={heroDiscContainerRef}
               onClick={() => setIsNowPlayingExpanded(true)}
-              className="relative w-44 h-44 sm:w-52 sm:h-52 p-1.5 bg-black border border-accent/40 flex items-center justify-center flex-shrink-0 cursor-pointer group hover:border-accent transition-colors"
-              title="Click to open Now Playing terminal"
+              className="pixel-panel-inset p-2 cursor-pointer group flex items-center justify-center bg-black hover:border-retro-cyan transition-none"
+              title="Click to expand HUD console"
             >
-              <div
-                ref={heroDiscRef}
-                className="w-full h-full rounded-full vinyl-grooves-pattern relative overflow-hidden flex items-center justify-center shadow-none border border-scribe"
-              >
-                {/* Center Label Masked Album Art */}
-                <div className="w-[48%] h-[48%] rounded-full overflow-hidden relative border border-scribe/80">
-                  {activeTrack ? (
-                    <img
-                      src={activeTrack.thumbnailUrl}
-                      alt={activeTrack.title}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-surface flex items-center justify-center text-accent text-[10px] font-bold">
-                      LaIN
-                    </div>
-                  )}
-                </div>
-
-                {/* Glare Overlay */}
-                <div className="absolute inset-0 rounded-full vinyl-glare-overlay pointer-events-none opacity-40 mix-blend-screen" />
-
-                {/* Center Spindle Hole */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-black border border-accent/60" />
-              </div>
+              <PixelVinyl3D
+                thumbnailUrl={activeTrack?.thumbnailUrl}
+                isPlaying={isPlaying}
+                size={190}
+              />
             </div>
 
-            {/* Terminal Metadata Readout */}
+            {/* Cartridge Metadata & Command Actions */}
             <div className="flex-1 min-w-0 text-center sm:text-left">
-              <div className="text-[11px] text-kraft mb-1 uppercase tracking-wider">
-                &gt; NOW_PLAYING_METADATA:
+              <div className="text-[10px] font-pixel text-retro-gold mb-1">
+                &gt;&gt; NOW PLAYING
               </div>
               <h2 className="font-bold text-base sm:text-lg text-paper truncate">
-                {activeTrack ? activeTrack.title : 'NO_ACTIVE_TRACK'}
+                {activeTrack ? activeTrack.title : 'NO DISC LOADED'}
               </h2>
-              <p className="text-xs text-accent truncate mt-0.5">
-                {activeTrack ? `ARTIST: ${activeTrack.artist}` : 'READY FOR INPUT'}
+              <p className="text-xs text-retro-cyan truncate mt-0.5 font-mono">
+                ARTIST: {activeTrack ? activeTrack.artist : 'SELECT A TRACK TO INSERT'}
               </p>
               {activeTrack?.album && (
-                <p className="text-[11px] text-kraft truncate mt-0.5">
+                <p className="text-[11px] text-kraft truncate mt-0.5 font-mono">
                   ALBUM:  {activeTrack.album}
                 </p>
               )}
 
-              <div className="mt-3 pt-3 border-t border-scribe/60 flex items-center justify-center sm:justify-start gap-3 text-xs">
-                <button
-                  onClick={() => setIsNowPlayingExpanded(true)}
-                  className="px-2.5 py-1 bg-surface border border-scribe hover:border-accent text-paper hover:text-accent transition-colors flex items-center gap-1.5"
-                >
-                  <span>[ EXPAND_VIEW ]</span>
-                </button>
+              <div className="mt-4 pt-3 border-t-2 border-retro-border flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                 <button
                   onClick={togglePlay}
-                  className="px-2.5 py-1 bg-accent text-lacquer font-bold hover:bg-accent-hover transition-colors flex items-center gap-1"
+                  className="pixel-btn-accent px-3 py-1.5 text-xs font-pixel flex items-center gap-1.5"
                 >
-                  <span>{isPlaying ? '[ PAUSE ]' : '[ PLAY ]'}</span>
+                  {isPlaying ? (
+                    <>
+                      <Pause className="w-3 h-3 fill-current" />
+                      <span>PAUSE</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>PLAY</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setIsNowPlayingExpanded(true)}
+                  className="pixel-btn px-3 py-1.5 text-xs font-pixel text-paper hover:text-retro-cyan flex items-center gap-1.5"
+                >
+                  <span>FULL HUD</span>
                 </button>
               </div>
             </div>
@@ -285,70 +234,72 @@ export const MainTrackView: React.FC = () => {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          TAB 1: CATALOG / SEARCH
+          TAB 1: CATALOG SEARCH & TRACK SLOTS
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'catalog' && (
         <section>
-          {/* Direct CLI Command Search Input */}
+          {/* Retro Search Command Box */}
           <div className="mb-6">
-            <div className="relative flex items-center border border-scribe bg-substrate px-3 py-2.5 focus-within:border-accent transition-colors">
-              <span className="text-accent text-xs font-bold mr-2 pointer-events-none select-none">
-                &gt; search:
+            <div className="pixel-panel-inset px-3 py-2.5 flex items-center gap-2">
+              <span className="text-retro-cyan text-[11px] font-pixel select-none">
+                SEARCH:
               </span>
               <input
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
-                placeholder="query title, artist, or composition..."
-                className="w-full bg-transparent text-paper placeholder:text-kraft/50 text-xs focus:outline-none"
+                placeholder="query music database..."
+                className="w-full bg-transparent text-paper placeholder:text-kraft/50 text-xs font-mono focus:outline-none"
               />
               {inputVal && (
                 <button
                   onClick={handleClearSearch}
-                  className="text-kraft hover:text-paper transition-colors px-1"
+                  className="pixel-btn px-1.5 py-0.5 text-xs text-kraft hover:text-paper"
                   title="Clear search"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3 h-3" />
                 </button>
               )}
               {isSearching && (
-                <span className="text-[11px] tabular-nums text-accent ml-2 animate-pulse flex-shrink-0">
-                  [QUERYING...]
+                <span className="text-[10px] font-pixel text-retro-gold ml-2 animate-pulse flex-shrink-0">
+                  LOADING...
                 </span>
               )}
             </div>
 
             {searchMessage && (
-              <p className="mt-2 text-xs text-kraft leading-relaxed">
+              <p className="mt-2 text-xs text-kraft font-mono">
                 # {searchMessage}
               </p>
             )}
 
             {trackErrorMessage && (
-              <p className="mt-2 text-xs text-red-400 leading-relaxed">
+              <p className="mt-2 text-xs text-red-400 font-mono">
                 ! {trackErrorMessage}
               </p>
             )}
           </div>
 
-          {/* Catalog Fixed-Width Table */}
-          <div className="border border-scribe bg-substrate">
-            <div className="grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center text-xs text-kraft border-b border-scribe py-2 px-3 bg-surface">
-              <span className="tabular-nums">#</span>
-              <span>COMPOSITION / ARTIST</span>
-              <span className="text-center">SAVE</span>
-              <span className="text-right tabular-nums">TIME</span>
+          {/* Retro Inventory / Save-Slot Track Table */}
+          <div className="pixel-panel bg-retro-panel overflow-hidden">
+            <div className="grid grid-cols-[48px_1fr_65px_65px] sm:grid-cols-[60px_1fr_80px_75px] items-center text-[10px] font-pixel text-kraft border-b-2 border-retro-border py-2 px-3 bg-retro-slot">
+              <span>SLOT</span>
+              <span>COMPOSITION</span>
+              <span className="text-center">FAV</span>
+              <span className="text-right">TIME</span>
             </div>
 
             {searchResults.length === 0 ? (
-              <div className="py-16 text-center text-kraft text-xs">
-                <p>[!] NO RECORDINGS MATCH CURRENT QUERY.</p>
-                <p className="text-kraft/60 mt-1">Check query spelling or enter a different term.</p>
+              <div className="py-16 text-center text-kraft text-xs font-mono">
+                <p className="font-pixel text-[11px] text-retro-gold mb-1">
+                  [!] NO DISCS FOUND IN CATALOG
+                </p>
+                <p className="text-kraft/70">Try a different search query or artist name.</p>
               </div>
             ) : (
-              <div className="divide-y divide-scribe">
+              <div className="divide-y-2 divide-retro-border">
                 {searchResults.map((track, idx) => (
-                  <TrackRow
+                  <RetroTrackRow
                     key={track.id || track.videoId}
                     track={track}
                     idx={idx}
@@ -378,35 +329,41 @@ export const MainTrackView: React.FC = () => {
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'liked' && (
         <section>
-          <div className="border border-scribe bg-substrate p-3 mb-4 flex items-center justify-between">
+          <div className="pixel-panel p-3 mb-4 flex items-center justify-between bg-retro-panel">
             <div>
-              <span className="text-xs text-accent font-bold">&gt; [ ARCHIVE: LIKED_SONGS ]</span>
-              <p className="text-[11px] text-kraft mt-0.5">Persisted local collection</p>
+              <span className="text-xs font-pixel text-retro-cyan">
+                ▶ SAVED TRACKS // FAVORITES
+              </span>
+              <p className="text-[11px] text-kraft font-mono mt-0.5">
+                Saved cartridge memory slots
+              </p>
             </div>
-            <span className="text-xs tabular-nums text-kraft">
-              COUNT: {likedTracks.length}
+            <span className="text-[10px] font-pixel text-retro-gold">
+              SLOTS: {likedTracks.length}
             </span>
           </div>
 
           {likedTracks.length === 0 ? (
-            <div className="py-16 text-center text-kraft text-xs border border-dashed border-scribe p-8 bg-substrate">
-              <p className="text-paper font-bold">[!] NO LIKED RECORDINGS RECORDED</p>
-              <p className="text-kraft/70 mt-1">
-                Toggle the heart marker [♥] on any composition to save it to your local storage.
+            <div className="py-16 text-center text-kraft text-xs font-mono pixel-panel-inset p-8 bg-retro-panel">
+              <p className="font-pixel text-[11px] text-retro-gold mb-2">
+                [!] NO SAVED TRACKS IN MEMORY
+              </p>
+              <p className="text-kraft/70">
+                Click the [♥] button on any track in the catalog to save it to cartridge memory.
               </p>
             </div>
           ) : (
-            <div className="border border-scribe bg-substrate">
-              <div className="grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center text-xs text-kraft border-b border-scribe py-2 px-3 bg-surface">
-                <span className="tabular-nums">#</span>
-                <span>COMPOSITION / ARTIST</span>
-                <span className="text-center">SAVE</span>
-                <span className="text-right tabular-nums">TIME</span>
+            <div className="pixel-panel bg-retro-panel overflow-hidden">
+              <div className="grid grid-cols-[48px_1fr_65px_65px] sm:grid-cols-[60px_1fr_80px_75px] items-center text-[10px] font-pixel text-kraft border-b-2 border-retro-border py-2 px-3 bg-retro-slot">
+                <span>SLOT</span>
+                <span>COMPOSITION</span>
+                <span className="text-center">FAV</span>
+                <span className="text-right">TIME</span>
               </div>
 
-              <div className="divide-y divide-scribe">
+              <div className="divide-y-2 divide-retro-border">
                 {likedTracks.map((track, idx) => (
-                  <TrackRow
+                  <RetroTrackRow
                     key={track.id || track.videoId}
                     track={track}
                     idx={idx}
@@ -436,52 +393,56 @@ export const MainTrackView: React.FC = () => {
          ───────────────────────────────────────────────────────────── */}
       {activeTab === 'playlists' && (
         <section>
-          {/* CLI Form: Create Playlist */}
+          {/* Create Custom Playlist Form */}
           <form onSubmit={handleCreatePlaylist} className="mb-4 flex gap-2">
-            <div className="relative flex-1 flex items-center border border-scribe bg-substrate px-3 py-2 focus-within:border-accent">
-              <span className="text-accent text-xs font-bold mr-2 select-none">&gt; mkplaylist:</span>
+            <div className="relative flex-1 pixel-panel-inset px-3 py-2 flex items-center gap-2">
+              <span className="text-retro-cyan text-[10px] font-pixel select-none">
+                NEW_SLOT:
+              </span>
               <input
                 type="text"
                 value={newPlaylistName}
                 onChange={(e) => setNewPlaylistName(e.target.value)}
                 placeholder="playlist_label..."
-                className="w-full bg-transparent text-xs text-paper placeholder:text-kraft/50 focus:outline-none"
+                className="w-full bg-transparent text-xs text-paper placeholder:text-kraft/50 font-mono focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={!newPlaylistName.trim()}
-              className="bg-accent text-lacquer hover:bg-accent-hover disabled:opacity-30 disabled:pointer-events-none px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
+              className="pixel-btn-accent px-4 py-2 text-[10px] font-pixel flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none"
             >
               <FolderPlus className="w-3.5 h-3.5" />
-              <span>[ CREATE ]</span>
+              <span>CREATE</span>
             </button>
           </form>
 
           {playlists.length === 0 ? (
-            <div className="py-16 text-center text-kraft text-xs border border-dashed border-scribe p-8 bg-substrate">
-              <p className="text-paper font-bold">[!] ZERO PLAYLISTS RECORDED</p>
-              <p className="text-kraft/70 mt-1">
-                Execute 'mkplaylist' command above to create a named track list.
+            <div className="py-16 text-center text-kraft text-xs font-mono pixel-panel-inset p-8 bg-retro-panel">
+              <p className="font-pixel text-[11px] text-retro-gold mb-2">
+                [!] ZERO CUSTOM PLAYLISTS
+              </p>
+              <p className="text-kraft/70">
+                Enter a title above and press CREATE to add a new custom playlist slot.
               </p>
             </div>
           ) : (
             <div>
-              {/* Terminal Playlist Selectors */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-3">
+              {/* Retro Playlist Selector Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3">
                 {playlists.map((pl) => {
                   const isSelected = currentPlaylist?.id === pl.id;
                   return (
                     <button
                       key={pl.id}
                       onClick={() => setSelectedPlaylistId(pl.id)}
-                      className={`px-3 py-1 text-xs transition-colors flex-shrink-0 ${
+                      className={`px-3 py-1.5 text-[10px] font-pixel flex-shrink-0 transition-none ${
                         isSelected
-                          ? 'bg-accent text-lacquer font-bold'
-                          : 'bg-substrate border border-scribe text-kraft hover:text-paper hover:border-scribe/80'
+                          ? 'pixel-btn-accent'
+                          : 'pixel-btn text-kraft hover:text-paper'
                       }`}
                     >
-                      [ {pl.name} ({pl.tracks.length}) ]
+                      {isSelected ? `▶ ${pl.name} (${pl.tracks.length})` : `  ${pl.name} (${pl.tracks.length})`}
                     </button>
                   );
                 })}
@@ -489,51 +450,53 @@ export const MainTrackView: React.FC = () => {
 
               {/* Selected Playlist Inspector */}
               {currentPlaylist && (
-                <div className="border border-scribe bg-substrate p-4">
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-scribe">
+                <div className="pixel-panel p-4 bg-retro-panel">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-retro-border">
                     <div>
-                      <span className="text-xs text-accent font-bold">
-                        &gt; INSPECTING_PLAYLIST: {currentPlaylist.name}
+                      <span className="text-xs font-pixel text-retro-cyan">
+                        ▶ PLAYLIST: {currentPlaylist.name}
                       </span>
-                      <p className="text-[11px] text-kraft mt-0.5">
-                        COUNT: {currentPlaylist.tracks.length} compositions
+                      <p className="text-[11px] text-kraft font-mono mt-0.5">
+                        TRACKS: {currentPlaylist.tracks.length} compositions
                       </p>
                     </div>
 
                     <button
                       onClick={() => deletePlaylist(currentPlaylist.id)}
-                      className="text-kraft hover:text-red-400 p-1.5 border border-scribe hover:border-red-400/50 bg-surface transition-colors flex items-center gap-1 text-xs"
+                      className="pixel-btn px-2 py-1 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
                       title="Delete playlist"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>[ RM ]</span>
+                      <span className="font-pixel text-[9px]">DELETE</span>
                     </button>
                   </div>
 
                   {currentPlaylist.tracks.length === 0 ? (
-                    <div className="py-10 text-center text-kraft text-xs">
-                      <p>[!] PLAYLIST CONTAINS 0 TRACKS.</p>
-                      <p className="text-kraft/60 mt-1">
-                        Use the [+] action button on Catalog or Liked tracks to insert entries.
+                    <div className="py-10 text-center text-kraft text-xs font-mono">
+                      <p className="font-pixel text-[10px] text-retro-gold mb-1">
+                        [!] PLAYLIST IS EMPTY
+                      </p>
+                      <p className="text-kraft/70">
+                        Use the [+] action button on Catalog or Liked tracks to insert songs.
                       </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-scribe">
+                    <div className="divide-y-2 divide-retro-border">
                       {currentPlaylist.tracks.map((track, idx) => (
                         <div
                           key={`${track.videoId}-${idx}`}
                           onClick={() => handleTrackClick(track)}
-                          className="group grid grid-cols-[36px_1fr_40px_65px] items-center px-2 py-2.5 hover:bg-surface cursor-pointer transition-colors"
+                          className="group grid grid-cols-[40px_1fr_40px_65px] items-center px-2 py-2 hover:bg-retro-slot cursor-pointer transition-none"
                         >
-                          <span className="text-xs tabular-nums text-kraft">
+                          <span className="text-xs tabular-nums text-kraft font-mono">
                             {(idx + 1).toString().padStart(2, '0')}
                           </span>
 
                           <div className="min-w-0 pr-2">
-                            <p className="text-xs font-semibold text-paper truncate group-hover:text-accent transition-colors">
+                            <p className="text-xs font-bold text-paper truncate group-hover:text-retro-cyan font-mono">
                               {track.title}
                             </p>
-                            <p className="text-[11px] text-kraft truncate">
+                            <p className="text-[11px] text-kraft truncate font-mono">
                               {track.artist}
                             </p>
                           </div>
@@ -543,13 +506,13 @@ export const MainTrackView: React.FC = () => {
                               e.stopPropagation();
                               removeTrackFromPlaylist(currentPlaylist.id, track.videoId);
                             }}
-                            className="text-kraft hover:text-red-400 p-1 transition-colors"
+                            className="pixel-btn p-1 text-red-400 hover:text-red-300"
                             title="Remove from playlist"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
 
-                          <div className="text-right text-xs tabular-nums text-kraft">
+                          <div className="text-right text-xs tabular-nums text-kraft font-mono">
                             {formatDuration(track.duration)}
                           </div>
                         </div>
@@ -566,7 +529,7 @@ export const MainTrackView: React.FC = () => {
   );
 };
 
-interface TrackRowProps {
+interface RetroTrackRowProps {
   track: TrackItem;
   idx: number;
   activeTrack: TrackItem | null;
@@ -581,7 +544,7 @@ interface TrackRowProps {
   formatDuration: (secs: number) => string;
 }
 
-const TrackRow: React.FC<TrackRowProps> = ({
+const RetroTrackRow: React.FC<RetroTrackRowProps> = ({
   track,
   idx,
   activeTrack,
@@ -597,83 +560,87 @@ const TrackRow: React.FC<TrackRowProps> = ({
 }) => {
   const isActive = activeTrack?.videoId === track.videoId;
   const isRowPlaying = isActive && isPlaying;
-  const trackNum = (idx + 1).toString().padStart(2, '0');
+  const slotNum = (idx + 1).toString().padStart(2, '0');
 
   return (
     <div
       onClick={() => onTrackClick(track)}
-      className={`group grid grid-cols-[36px_1fr_60px_65px] sm:grid-cols-[48px_1fr_75px_80px] items-center px-3 py-2.5 cursor-pointer transition-colors relative ${
+      className={`group grid grid-cols-[48px_1fr_65px_65px] sm:grid-cols-[60px_1fr_80px_75px] items-center px-3 py-2.5 cursor-pointer transition-none relative ${
         isActive
-          ? 'bg-surface text-accent border-l-2 border-accent'
-          : 'hover:bg-surface/70 text-paper'
+          ? 'bg-retro-slot text-retro-cyan border-l-4 border-retro-cyan'
+          : 'hover:bg-retro-slot/70 text-paper'
       }`}
     >
-      {/* Column 1: Index / Play Status */}
+      {/* Column 1: Slot Indicator / Retro Cursor */}
       <div className="flex items-center">
-        <span className="text-xs tabular-nums text-kraft flex items-center justify-center w-5">
+        <span className="text-xs font-mono font-bold flex items-center justify-center w-6">
           {isRowPlaying ? (
-            <span className="text-accent font-bold animate-pulse">&gt;</span>
+            <span className="text-retro-gold font-pixel text-[10px] animate-pulse">▶</span>
           ) : (
-            <span className="group-hover:hidden">{trackNum}</span>
+            <span className="text-kraft group-hover:text-retro-cyan">{slotNum}</span>
           )}
-          <Play
-            className={`w-3 h-3 text-accent fill-current ${
-              isRowPlaying ? 'hidden' : 'hidden group-hover:block'
-            }`}
-          />
         </span>
       </div>
 
-      {/* Column 2: Monospace Track Title & Artist */}
-      <div className="min-w-0 pr-3">
-        <p
-          className={`text-xs font-semibold truncate ${
-            isActive ? 'text-accent' : 'text-paper group-hover:text-accent transition-colors'
-          }`}
-        >
-          {track.title}
-        </p>
-        <p className="text-[11px] text-kraft truncate mt-0.5">
-          {track.artist}
-          {track.album && <span className="opacity-60"> // {track.album}</span>}
-        </p>
+      {/* Column 2: Track Title & Artist */}
+      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+        <div className="w-8 h-8 pixel-panel-inset flex-shrink-0 overflow-hidden hidden sm:flex items-center justify-center bg-black">
+          <img
+            src={track.thumbnailUrl}
+            alt=""
+            className="w-full h-full object-cover pixelated"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-xs font-bold truncate font-mono ${
+              isActive ? 'text-retro-cyan' : 'text-paper group-hover:text-retro-cyan'
+            }`}
+          >
+            {track.title}
+          </p>
+          <p className="text-[11px] text-kraft truncate mt-0.5 font-mono">
+            {track.artist}
+            {track.album && <span className="opacity-60"> // {track.album}</span>}
+          </p>
+        </div>
       </div>
 
-      {/* Column 3: Like / Add Actions */}
+      {/* Column 3: Like & Add Actions */}
       <div className="flex items-center justify-center gap-1.5 relative">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onToggleLike(track);
           }}
-          className="p-1 text-kraft hover:text-paper transition-colors"
-          title={isLiked ? 'Unlike' : 'Like'}
+          className={`pixel-btn px-1.5 py-1 text-xs ${
+            isLiked ? 'text-retro-gold border-retro-gold' : 'text-kraft hover:text-paper'
+          }`}
+          title={isLiked ? 'Unlike' : 'Save to favorites'}
         >
-          <Heart
-            className={`w-3.5 h-3.5 transition-colors ${
-              isLiked ? 'fill-accent text-accent' : 'hover:text-paper'
-            }`}
-          />
+          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
         </button>
 
         {playlists.length > 0 && (
           <div className="relative">
             <button
               onClick={onToggleMenu}
-              className="p-1 text-kraft hover:text-paper transition-colors"
+              className="pixel-btn px-1.5 py-1 text-xs text-kraft hover:text-paper"
               title="Add to playlist"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
 
-            {/* Sharp TUI Playlist Dropdown */}
+            {/* Retro Beveled Dropdown */}
             {isMenuOpen && (
               <div
                 onClick={(e) => e.stopPropagation()}
-                className="absolute right-0 top-full mt-1 z-30 w-48 bg-substrate border border-accent/60 shadow-none py-1 text-xs"
+                className="absolute right-0 top-full mt-1 z-30 w-48 pixel-panel-cyan py-1 text-xs bg-retro-panel"
               >
-                <div className="px-2.5 py-1 text-[10px] uppercase text-accent border-b border-scribe">
-                  &gt; add_to_playlist:
+                <div className="px-2.5 py-1 text-[9px] font-pixel text-retro-cyan border-b-2 border-retro-border">
+                  &gt; ADD TO SLOT:
                 </div>
                 {playlists.map((p) => (
                   <button
@@ -682,10 +649,10 @@ const TrackRow: React.FC<TrackRowProps> = ({
                       onAddToPlaylist(p.id, track);
                       onToggleMenu({ stopPropagation: () => {} } as React.MouseEvent);
                     }}
-                    className="w-full px-2.5 py-1 text-left text-paper hover:bg-accent hover:text-lacquer truncate flex items-center justify-between"
+                    className="w-full px-2.5 py-1.5 text-left text-paper hover:bg-retro-cyan hover:text-retro-bg truncate flex items-center justify-between font-mono"
                   >
-                    <span className="truncate">[ {p.name} ]</span>
-                    <span className="text-[10px] opacity-70 ml-1">{p.tracks.length}</span>
+                    <span className="truncate">{p.name}</span>
+                    <span className="text-[10px] opacity-70 ml-1">({p.tracks.length})</span>
                   </button>
                 ))}
               </div>
@@ -695,7 +662,7 @@ const TrackRow: React.FC<TrackRowProps> = ({
       </div>
 
       {/* Column 4: Tabular Duration */}
-      <div className="text-right text-xs tabular-nums text-kraft group-hover:text-paper transition-colors">
+      <div className="text-right text-xs tabular-nums text-kraft group-hover:text-paper font-mono">
         {formatDuration(track.duration)}
       </div>
     </div>

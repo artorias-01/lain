@@ -3,37 +3,45 @@
 @tailwind utilities;
 
 :root {
-  /* Terminal / TUI Phosphor System */
-  --bg-lacquer: #050505;
-  --bg-substrate: #0E110E;
-  --bg-surface: #141814;
+  /* Fixed 16-Bit / SNES Retro Arcade Palette */
+  --bg-lacquer: #080B11;
+  --bg-substrate: #121824;
+  --bg-surface: #172030;
   
-  /* Classic CRT Phosphor Green Register */
-  --terminal-green: #22C55E;
-  --terminal-green-bright: #4ADE80;
-  --terminal-green-dim: rgba(34, 197, 94, 0.15);
-  --terminal-green-glow: rgba(34, 197, 94, 0.22);
+  --retro-cyan: #00F0FF;
+  --retro-gold: #FFB800;
   
-  --dynamic-accent: var(--terminal-green);
-  --dynamic-accent-hover: var(--terminal-green-bright);
-  --dynamic-accent-rgb: 34, 197, 94;
-  --dynamic-accent-dim: var(--terminal-green-dim);
-  --dynamic-accent-glow: var(--terminal-green-glow);
+  --dynamic-accent: #00F0FF;
+  --dynamic-accent-hover: #38E1FF;
+  --dynamic-accent-rgb: 0, 240, 255;
+  --dynamic-accent-dim: rgba(0, 240, 255, 0.15);
+  --dynamic-accent-glow: rgba(0, 240, 255, 0.25);
   
   --color-ochre: var(--dynamic-accent);
   --color-ochre-hover: var(--dynamic-accent-hover);
   --color-ochre-dim: var(--dynamic-accent-dim);
   
-  --text-paper: #E5E7EB;
-  --text-paper-dim: #9CA3AF;
-  --text-kraft: #6B7280;
+  --text-paper: #F0F6FC;
+  --text-paper-dim: #8B949E;
+  --text-kraft: #8295A8;
   
-  --border-scribe: #1C261D;
-  --border-scribe-subtle: #141D15;
+  --border-scribe: #384556;
+  --border-scribe-subtle: #202936;
 }
 
 body {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'JetBrains Mono', monospace;
+  background-color: var(--bg-lacquer);
+  color: var(--text-paper);
+}
+
+/* Image rendering pixelated for all 3D canvases and retro sprites */
+.pixelated,
+canvas {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 /* Tabular numbers for aligned timestamps and track indices */
@@ -41,33 +49,125 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Terminal Blinking Cursor */
-@keyframes terminal-blink {
+/* Retro Pixel Bevel Panels */
+.pixel-panel {
+  background: #121824;
+  border: 2px solid #384556;
+  box-shadow: inset -2px -2px 0px #04060A, inset 2px 2px 0px #4A5C73;
+}
+
+.pixel-panel-cyan {
+  background: #121824;
+  border: 2px solid #00F0FF;
+  box-shadow: inset -2px -2px 0px #008899, inset 2px 2px 0px #66F7FF;
+}
+
+.pixel-panel-inset {
+  background: #0B0F17;
+  border: 2px solid #202936;
+  box-shadow: inset 2px 2px 0px #04060A, inset -2px -2px 0px #2A3647;
+}
+
+/* Chunky 3D Arcade Buttons with tactile depressed state */
+.pixel-btn {
+  background: #172030;
+  color: #F0F6FC;
+  border-top: 2px solid #4A5C73;
+  border-left: 2px solid #4A5C73;
+  border-bottom: 2px solid #04060A;
+  border-right: 2px solid #04060A;
+  user-select: none;
+  cursor: pointer;
+  transition: none;
+}
+
+.pixel-btn:hover {
+  background: #1F2B40;
+}
+
+.pixel-btn:active {
+  border-top: 2px solid #04060A;
+  border-left: 2px solid #04060A;
+  border-bottom: 2px solid #4A5C73;
+  border-right: 2px solid #4A5C73;
+  transform: translate(1px, 1px);
+}
+
+.pixel-btn-accent {
+  background: #00F0FF;
+  color: #080B11;
+  border-top: 2px solid #66F7FF;
+  border-left: 2px solid #66F7FF;
+  border-bottom: 2px solid #008899;
+  border-right: 2px solid #008899;
+  font-weight: bold;
+  user-select: none;
+  cursor: pointer;
+  transition: none;
+}
+
+.pixel-btn-accent:hover {
+  background: #38E1FF;
+}
+
+.pixel-btn-accent:active {
+  border-top: 2px solid #008899;
+  border-left: 2px solid #008899;
+  border-bottom: 2px solid #66F7FF;
+  border-right: 2px solid #66F7FF;
+  transform: translate(1px, 1px);
+}
+
+.pixel-btn-gold {
+  background: #FFB800;
+  color: #080B11;
+  border-top: 2px solid #FFD066;
+  border-left: 2px solid #FFD066;
+  border-bottom: 2px solid #996E00;
+  border-right: 2px solid #996E00;
+  font-weight: bold;
+  user-select: none;
+  cursor: pointer;
+  transition: none;
+}
+
+.pixel-btn-gold:active {
+  border-top: 2px solid #996E00;
+  border-left: 2px solid #996E00;
+  border-bottom: 2px solid #FFD066;
+  border-right: 2px solid #FFD066;
+  transform: translate(1px, 1px);
+}
+
+/* Retro Blinking Cursor Animation */
+@keyframes retro-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
 
-.terminal-cursor {
+.retro-cursor {
   display: inline-block;
-  animation: terminal-blink 1s steps(1) infinite;
+  animation: retro-blink 0.8s steps(1) infinite;
 }
 
-/* Minimalist Sharp Terminal Scrollbar */
+/* Minimalist Sharp Pixel Scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-lacquer);
+  background: #080B11;
+  border-left: 1px solid #202936;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-scribe);
-  border-radius: 0px;
+  background: #384556;
+  border: 1px solid #4A5C73;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--terminal-green);
+  background: #00F0FF;
+  border-color: #66F7FF;
 }
 
-/* Sharp Unadorned Terminal Range Slider */
+/* Unadorned Range Slider */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -76,58 +176,18 @@ input[type="range"] {
 }
 
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 2px;
-  background: var(--border-scribe);
-  border-radius: 0px;
+  height: 4px;
+  background: #172030;
+  border: 1px solid #384556;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  height: 10px;
-  width: 6px;
-  border-radius: 0px;
-  background: var(--terminal-green);
-  margin-top: -4px;
-  transition: transform 0.1s linear, background 0.1s linear;
-}
-
-input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  background: var(--terminal-green-bright);
-}
-
-/* Concentric micro-groove vinyl pattern in deep obsidian */
-.vinyl-grooves-pattern {
-  background: radial-gradient(circle,
-    #0d0f0d 0%,
-    #0d0f0d 18%,
-    #050605 19%,
-    #131713 20%,
-    #060806 23%,
-    #101410 24%,
-    #070907 30%,
-    #141914 31%,
-    #060806 42%,
-    #121612 43%,
-    #050605 58%,
-    #101310 59%,
-    #040504 72%,
-    #0d100d 73%,
-    #030403 100%
-  );
-}
-
-/* Anisotropic specular glare sweep */
-.vinyl-glare-overlay {
-  background: conic-gradient(
-    from 40deg,
-    rgba(255, 255, 255, 0) 0deg,
-    rgba(34, 197, 94, 0.10) 30deg,
-    rgba(255, 255, 255, 0) 65deg,
-    rgba(255, 255, 255, 0) 180deg,
-    rgba(34, 197, 94, 0.10) 210deg,
-    rgba(255, 255, 255, 0) 245deg,
-    rgba(255, 255, 255, 0) 360deg
-  );
+  height: 12px;
+  width: 8px;
+  background: #00F0FF;
+  border: 1px solid #66F7FF;
+  margin-top: -5px;
+  cursor: pointer;
 }
