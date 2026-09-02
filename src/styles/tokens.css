@@ -3,17 +3,26 @@
 @tailwind utilities;
 
 :root {
-  /* Japanese Jazz Kissa / Analog Archival Minimal Palette */
-  --bg-lacquer: #0E0D0B;
-  --bg-substrate: #171614;
-  --color-ochre: #C89D5C;
-  --color-ochre-hover: #DAB577;
-  --color-ochre-dim: rgba(200, 157, 92, 0.15);
-  --text-paper: #F3EDE2;
-  --text-paper-dim: rgba(243, 237, 226, 0.75);
-  --text-kraft: #8C8275;
-  --border-scribe: #26231F;
-  --border-scribe-subtle: #1C1A17;
+  /* Cool Neutral Dark Palette */
+  --bg-lacquer: #0A0B0E;
+  --bg-substrate: #13151A;
+  
+  /* Dynamic Artwork-Derived Accent with Cool Slate Fallback */
+  --dynamic-accent: #5875A6;
+  --dynamic-accent-hover: #6D8DC2;
+  --dynamic-accent-rgb: 88, 117, 166;
+  --dynamic-accent-dim: rgba(88, 117, 166, 0.15);
+  --dynamic-accent-glow: rgba(88, 117, 166, 0.28);
+  
+  --color-ochre: var(--dynamic-accent);
+  --color-ochre-hover: var(--dynamic-accent-hover);
+  --color-ochre-dim: var(--dynamic-accent-dim);
+  
+  --text-paper: #F2F4F8;
+  --text-paper-dim: rgba(242, 244, 248, 0.75);
+  --text-kraft: #8B93A2;
+  --border-scribe: #20232B;
+  --border-scribe-subtle: #171920;
 }
 
 /* Tabular numbers for aligned timestamps and track indices */
@@ -33,7 +42,7 @@
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ochre);
+  background: var(--dynamic-accent);
 }
 
 /* Unadorned Range Slider */
@@ -63,27 +72,27 @@ input[type="range"]::-webkit-slider-thumb {
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.2);
-  background: var(--color-ochre);
+  background: var(--dynamic-accent);
 }
 
-/* Concentric micro-groove vinyl pattern */
+/* Concentric micro-groove vinyl pattern in neutral obsidian / graphite */
 .vinyl-grooves-pattern {
   background: radial-gradient(circle,
-    #141310 0%,
-    #141310 18%,
-    #0d0c0a 19%,
-    #1b1916 20%,
-    #0b0a08 23%,
-    #181613 24%,
-    #0c0b09 30%,
-    #1e1c18 31%,
-    #0c0b09 42%,
-    #1a1814 43%,
-    #0a0908 58%,
-    #171512 59%,
-    #080706 72%,
-    #151310 73%,
-    #050504 100%
+    #111215 0%,
+    #111215 18%,
+    #090a0c 19%,
+    #16181d 20%,
+    #08090b 23%,
+    #131519 24%,
+    #0a0b0d 30%,
+    #181a20 31%,
+    #090a0c 42%,
+    #14161b 43%,
+    #08090b 58%,
+    #13151a 59%,
+    #060708 72%,
+    #111317 73%,
+    #040506 100%
   );
 }
 

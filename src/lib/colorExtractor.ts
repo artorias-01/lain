@@ -5,12 +5,12 @@ export interface ExtractedColor {
   hex: string;
 }
 
-// Default warm vintage tobacco/amber palette tone fitting the Japanese Jazz Kissa aesthetic
+// Default cool slate tone for neutral dark aesthetic idle state
 export const FALLBACK_COLOR: ExtractedColor = {
-  r: 45,
-  g: 32,
-  b: 21,
-  hex: '#2d2015',
+  r: 88,
+  g: 117,
+  b: 166,
+  hex: '#5875a6',
 };
 
 // In-memory cache per video ID or image URL
@@ -19,14 +19,34 @@ const colorCache = new Map<string, ExtractedColor>();
 /**
  * Converts RGB components to hex string
  */
-function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (c: number) => Math.round(c).toString(16).padStart(2, '0');
+export function rgbToHex(r: number, g: number, b: number): string {
+  const toHex = (c: number) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0');
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**
+ * Applies the extracted accent color to the global CSS custom properties on :root
+ * so the entire app (hero glow, active tracks, scrub bar) reflects the active artwork.
+ */
+export function applyDynamicTheme(color: ExtractedColor) {
+  if (typeof document === 'undefined') return;
+  const { r, g, b, hex } = color;
+  const root = document.documentElement;
+
+  root.style.setProperty('--dynamic-accent', hex);
+  root.style.setProperty('--dynamic-accent-rgb', `${r}, ${g}, ${b}`);
+  root.style.setProperty('--dynamic-accent-dim', `rgba(${r}, ${g}, ${b}, 0.15)`);
+  root.style.setProperty('--dynamic-accent-glow', `rgba(${r}, ${g}, ${b}, 0.28)`);
+
+  const hoverR = Math.min(255, Math.round(r * 1.15));
+  const hoverG = Math.min(255, Math.round(g * 1.15));
+  const hoverB = Math.min(255, Math.round(b * 1.15));
+  root.style.setProperty('--dynamic-accent-hover', rgbToHex(hoverR, hoverG, hoverB));
+}
+
+/**
  * Extracts a rich, dominant color from an image URL using an offscreen canvas.
- * Handles CORS canvas-tainting restrictions gracefully with fallback.
+ * Automatically applies the dynamic accent to :root and handles CORS gracefully.
  */
 export function extractDominantColor(
   imageUrl: string,
@@ -34,11 +54,14 @@ export function extractDominantColor(
 ): Promise<ExtractedColor> {
   const key = cacheKey || imageUrl;
   if (colorCache.has(key)) {
-    return Promise.resolve(colorCache.get(key)!);
+    const cached = colorCache.get(key)!;
+    applyDynamicTheme(cached);
+    return Promise.resolve(cached);
   }
 
   return new Promise((resolve) => {
     if (!imageUrl) {
+      applyDynamicTheme(FALLBACK_COLOR);
       resolve(FALLBACK_COLOR);
       return;
     }
@@ -48,6 +71,7 @@ export function extractDominantColor(
 
     // Timeout safety in case image hangs
     const timer = setTimeout(() => {
+      applyDynamicTheme(FALLBACK_COLOR);
       resolve(FALLBACK_COLOR);
     }, 2500);
 
@@ -61,6 +85,7 @@ export function extractDominantColor(
         const ctx = canvas.getContext('2d');
 
         if (!ctx) {
+          applyDynamicTheme(FALLBACK_COLOR);
           resolve(FALLBACK_COLOR);
           return;
         }
@@ -140,17 +165,20 @@ export function extractDominantColor(
         };
 
         colorCache.set(key, result);
+        applyDynamicTheme(result);
         resolve(result);
       } catch (_corsError) {
         // Limitation: CORS policy restrictions on cross-origin image data
-        // Fall back gracefully to the signature neutral tobacco gradient
+        // Fall back gracefully to cool neutral slate tone
         colorCache.set(key, FALLBACK_COLOR);
+        applyDynamicTheme(FALLBACK_COLOR);
         resolve(FALLBACK_COLOR);
       }
     };
 
     img.onerror = () => {
       clearTimeout(timer);
+      applyDynamicTheme(FALLBACK_COLOR);
       resolve(FALLBACK_COLOR);
     };
 
@@ -163,12 +191,11 @@ export function extractDominantColor(
  */
 export function createAmbientGradient(color: ExtractedColor): string {
   const { r, g, b } = color;
-  // Tone down extreme brightness for an elegant, darkened ambient aura
   const maxComp = Math.max(r, g, b, 1);
   const scale = maxComp > 180 ? 180 / maxComp : 1;
   const cr = Math.round(r * scale);
   const cg = Math.round(g * scale);
   const cb = Math.round(b * scale);
 
-  return `radial-gradient(ellipse at 50% 25%, rgba(${cr}, ${cg}, ${cb}, 0.72) 0%, rgba(${Math.round(cr * 0.45)}, ${Math.round(cg * 0.45)}, ${Math.round(cb * 0.45)}, 0.45) 50%, #0E0D0B 90%)`;
+  return `radial-gradient(ellipse at 50% 25%, rgba(${cr}, ${cg}, ${cb}, 0.72) 0%, rgba(${Math.round(cr * 0.45)}, ${Math.round(cg * 0.45)}, ${Math.round(cb * 0.45)}, 0.45) 50%, #0A0B0E 90%)`;
 }

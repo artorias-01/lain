@@ -7,24 +7,30 @@ export default {
   theme: {
     extend: {
       colors: {
-        lacquer: '#0E0D0B',
-        substrate: '#171614',
+        lacquer: '#0A0B0E',
+        substrate: '#13151A',
+        accent: {
+          DEFAULT: 'var(--dynamic-accent)',
+          hover: 'var(--dynamic-accent-hover)',
+          dim: 'var(--dynamic-accent-dim)',
+          glow: 'var(--dynamic-accent-glow)',
+        },
         ochre: {
-          DEFAULT: '#C89D5C',
-          hover: '#DAB577',
-          dim: 'rgba(200, 157, 92, 0.15)',
+          DEFAULT: 'var(--dynamic-accent)',
+          hover: 'var(--dynamic-accent-hover)',
+          dim: 'var(--dynamic-accent-dim)',
         },
         paper: {
-          DEFAULT: '#F3EDE2',
-          dim: 'rgba(243, 237, 226, 0.75)',
+          DEFAULT: '#F2F4F8',
+          dim: 'rgba(242, 244, 248, 0.75)',
         },
         kraft: {
-          DEFAULT: '#8C8275',
-          dark: '#544E45',
+          DEFAULT: '#8B93A2',
+          dark: '#586070',
         },
         scribe: {
-          DEFAULT: '#26231F',
-          subtle: '#1C1A17',
+          DEFAULT: '#20232B',
+          subtle: '#171920',
         },
       },
       fontFamily: {
@@ -32,7 +38,7 @@ export default {
         sans: ['Plus Jakarta Sans', 'sans-serif'],
       },
       animation: {
-        'spin-disc': 'spin 3.5s linear infinite',
+        'spin-disc': 'spin 3.2s linear infinite',
       },
     },
   },

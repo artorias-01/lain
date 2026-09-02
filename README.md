@@ -1,8 +1,8 @@
-# AURA — Analog Listening Room
+# LaIN — Music Player
 
-An editorial, minimal web music player and listening room backed by self-hosted `yt-dlp` Range-proxy streaming, server-cached YouTube search, and authentic GSAP continuous-momentum vinyl physics.
+An editorial, minimal web music player and listening room backed by self-hosted `yt-dlp` Range-proxy streaming, direct YouTube Music catalog search, dynamic artwork-derived ambient theming, and authentic GSAP continuous-momentum vinyl physics.
 
-Designed with an intentional aesthetic (**Japanese Jazz Kissa / Analog Archival Minimal**) instead of generic AI SaaS templates.
+Designed with an intentional cool neutral obsidian aesthetic with artwork-driven dynamic accents.
 
 ---
 

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useLibraryStore } from '../../store/useLibraryStore';
 import { nativeAudioEngine } from '../../lib/nativeAudioEngine';
 import { registerVinylElement, setVinylPlaying } from '../../lib/vinylSpinSync';
 import { extractDominantColor, createAmbientGradient, FALLBACK_COLOR } from '../../lib/colorExtractor';
+import { fetchLyrics, LyricsResult } from '../../lib/lyricsService';
 import {
   ChevronDown,
   Play,
@@ -12,9 +14,10 @@ import {
   Repeat,
   Shuffle,
   ListMusic,
-  MoreVertical,
+  Heart,
   Volume2,
   VolumeX,
+  FileText,
 } from 'lucide-react';
 import gsap from 'gsap';
 import anime from 'animejs';
@@ -42,6 +45,17 @@ export const ExpandedNowPlaying: React.FC = () => {
     toggleMute,
     searchQuery,
   } = usePlayerStore();
+
+  const { isLiked, toggleLike } = useLibraryStore();
+
+  const [activeSheetTab, setActiveSheetTab] = useState<'queue' | 'lyrics'>('queue');
+  const [lyricsData, setLyricsData] = useState<LyricsResult & { loading: boolean }>({
+    plainLyrics: null,
+    syncedLyrics: null,
+    instrumental: false,
+    found: false,
+    loading: false,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -170,9 +184,29 @@ export const ExpandedNowPlaying: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeTrack.videoId, activeTrack.thumbnailUrl, isNowPlayingExpanded]);
+  }, [activeTrack?.videoId, activeTrack?.thumbnailUrl, isNowPlayingExpanded]);
 
-  // 4. Progress bar continuous rAF loop
+  // 4. Fetch Lyrics via lrclib.net on Track Change
+  useEffect(() => {
+    if (!activeTrack) return;
+
+    let isMounted = true;
+    setLyricsData((prev) => ({ ...prev, loading: true }));
+
+    fetchLyrics(activeTrack.title, activeTrack.artist, activeTrack.videoId).then((res) => {
+      if (!isMounted) return;
+      setLyricsData({
+        ...res,
+        loading: false,
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTrack?.videoId, activeTrack?.title, activeTrack?.artist]);
+
+  // 5. Progress bar continuous rAF loop
   useEffect(() => {
     if (!isNowPlayingExpanded) return;
 
@@ -206,7 +240,7 @@ export const ExpandedNowPlaying: React.FC = () => {
     return () => cancelAnimationFrame(animFrameId);
   }, [isNowPlayingExpanded]);
 
-  // 5. Play/Pause icon pop micro-animation
+  // 6. Play/Pause icon pop micro-animation
   useEffect(() => {
     if (playIconRef.current && isNowPlayingExpanded) {
       anime.remove(playIconRef.current);
@@ -279,6 +313,7 @@ export const ExpandedNowPlaying: React.FC = () => {
   }, [isNowPlayingExpanded]);
 
   const scrollToQueue = () => {
+    setActiveSheetTab('queue');
     queueSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -286,6 +321,7 @@ export const ExpandedNowPlaying: React.FC = () => {
 
   const currentVol = isMuted ? 0 : volume;
   const initialGradient = createAmbientGradient(FALLBACK_COLOR);
+  const isTrackLiked = isLiked(activeTrack.videoId);
 
   return (
     <div
@@ -367,14 +403,28 @@ export const ExpandedNowPlaying: React.FC = () => {
             </div>
           </div>
 
-          {/* Track Identity Details */}
-          <div className="w-full mb-6">
-            <h1 className="font-display font-bold text-2xl sm:text-3xl text-paper tracking-tight truncate leading-tight">
-              {activeTrack.title}
-            </h1>
-            <p className="font-sans text-base text-kraft truncate mt-1">
-              {activeTrack.artist}
-            </p>
+          {/* Track Identity Details + Like Button */}
+          <div className="w-full mb-6 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display font-bold text-2xl sm:text-3xl text-paper tracking-tight truncate leading-tight">
+                {activeTrack.title}
+              </h1>
+              <p className="font-sans text-base text-kraft truncate mt-1">
+                {activeTrack.artist}
+              </p>
+            </div>
+
+            <button
+              onClick={() => toggleLike(activeTrack)}
+              className="p-2 text-kraft hover:text-paper transition-colors rounded-full hover:bg-white/5 flex-shrink-0"
+              title={isTrackLiked ? 'Unlike' : 'Like'}
+            >
+              <Heart
+                className={`w-6 h-6 transition-colors ${
+                  isTrackLiked ? 'fill-accent text-accent' : 'text-kraft/70 hover:text-paper'
+                }`}
+              />
+            </button>
           </div>
 
           {/* Scrubbable Progress Bar */}
@@ -418,7 +468,7 @@ export const ExpandedNowPlaying: React.FC = () => {
             <button
               onClick={toggleShuffle}
               className={`p-2 transition-colors rounded-full hover:bg-white/5 ${
-                isShuffle ? 'text-ochre' : 'text-kraft/70 hover:text-paper'
+                isShuffle ? 'text-accent' : 'text-kraft/70 hover:text-paper'
               }`}
               title={isShuffle ? 'Shuffle active' : 'Shuffle inactive'}
             >
@@ -427,7 +477,7 @@ export const ExpandedNowPlaying: React.FC = () => {
 
             <button
               onClick={previousTrack}
-              className="text-paper hover:text-ochre active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
+              className="text-paper hover:text-accent active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
               title="Previous track"
             >
               <SkipBack className="w-7 h-7 fill-current" />
@@ -435,7 +485,7 @@ export const ExpandedNowPlaying: React.FC = () => {
 
             <button
               onClick={togglePlay}
-              className="w-16 h-16 rounded-full bg-paper text-lacquer hover:bg-ochre active:scale-95 transition-all shadow-xl flex items-center justify-center"
+              className="w-16 h-16 rounded-full bg-paper text-lacquer hover:bg-white active:scale-95 transition-all shadow-xl flex items-center justify-center"
               title={isPlaying ? 'Pause' : 'Play'}
             >
               <span ref={playIconRef} className="flex items-center justify-center">
@@ -449,7 +499,7 @@ export const ExpandedNowPlaying: React.FC = () => {
 
             <button
               onClick={nextTrack}
-              className="text-paper hover:text-ochre active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
+              className="text-paper hover:text-accent active:scale-90 transition-all p-2 rounded-full hover:bg-white/5"
               title="Next track"
             >
               <SkipForward className="w-7 h-7 fill-current" />
@@ -458,7 +508,7 @@ export const ExpandedNowPlaying: React.FC = () => {
             <button
               onClick={cycleRepeatMode}
               className={`p-2 transition-colors rounded-full hover:bg-white/5 ${
-                repeatMode !== 'none' ? 'text-ochre' : 'text-kraft/70 hover:text-paper'
+                repeatMode !== 'none' ? 'text-accent' : 'text-kraft/70 hover:text-paper'
               }`}
               title={`Repeat: ${repeatMode}`}
             >
@@ -467,7 +517,7 @@ export const ExpandedNowPlaying: React.FC = () => {
           </div>
 
           {/* Secondary Volume Row */}
-          <div className="w-full flex items-center justify-between gap-3 px-2 py-2 border-b border-scribe/50 mb-12">
+          <div className="w-full flex items-center justify-between gap-3 px-2 py-2 border-b border-scribe/50 mb-8">
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleMute}
@@ -489,84 +539,146 @@ export const ExpandedNowPlaying: React.FC = () => {
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
                 className="w-24 sm:w-32 h-1 cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #F3EDE2 ${currentVol * 100}%, #26231F ${currentVol * 100}%)`,
+                  background: `linear-gradient(to right, #F2F4F8 ${currentVol * 100}%, #20232B ${currentVol * 100}%)`,
                 }}
               />
             </div>
 
-            <button
-              onClick={scrollToQueue}
-              className="font-sans text-xs text-kraft hover:text-paper flex items-center gap-1.5 transition-colors"
-            >
-              <ListMusic className="w-4 h-4" />
-              <span>Queue ({queue.length})</span>
-            </button>
+            {/* Segmented Switcher between Up Next Queue and Lyrics */}
+            <div className="flex items-center gap-1 bg-substrate/80 p-0.5 rounded-lg border border-scribe text-xs font-sans">
+              <button
+                onClick={() => setActiveSheetTab('queue')}
+                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${
+                  activeSheetTab === 'queue'
+                    ? 'bg-paper text-lacquer font-semibold shadow-sm'
+                    : 'text-kraft hover:text-paper'
+                }`}
+              >
+                <ListMusic className="w-3.5 h-3.5" />
+                <span>Queue</span>
+              </button>
+              <button
+                onClick={() => setActiveSheetTab('lyrics')}
+                className={`px-3 py-1 rounded-md transition-all flex items-center gap-1 ${
+                  activeSheetTab === 'lyrics'
+                    ? 'bg-paper text-lacquer font-semibold shadow-sm'
+                    : 'text-kraft hover:text-paper'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Lyrics</span>
+              </button>
+            </div>
           </div>
 
-          {/* Below-the-fold Real Content: "Up Next in Queue" */}
-          <section ref={queueSectionRef} className="w-full pt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display font-bold text-lg text-paper tracking-tight">
-                Up Next
-              </h2>
-              <span className="font-sans text-xs text-kraft tabular-nums">
-                {queue.length} tracks
-              </span>
-            </div>
+          {/* ─────────────────────────────────────────────────────────────
+              BELOW-THE-FOLD SHEET CONTENT
+             ───────────────────────────────────────────────────────────── */}
+          <section ref={queueSectionRef} className="w-full">
+            {activeSheetTab === 'queue' ? (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-lg text-paper tracking-tight">
+                    Up Next
+                  </h2>
+                  <span className="font-sans text-xs text-kraft tabular-nums">
+                    {queue.length} tracks
+                  </span>
+                </div>
 
-            <div className="flex flex-col divide-y divide-scribe/40 rounded-xl bg-substrate/50 border border-scribe/60 p-2 sm:p-3 shadow-md">
-              {queue.map((track, idx) => {
-                const isCurrent = idx === currentTrackIndex;
-                return (
-                  <button
-                    key={`${track.videoId}-${idx}`}
-                    onClick={() => playTrackIndex(idx)}
-                    className={`w-full flex items-center gap-3 p-2.5 text-left rounded-lg transition-colors group ${
-                      isCurrent
-                        ? 'bg-ochre/15 text-paper'
-                        : 'hover:bg-white/5 text-kraft hover:text-paper'
-                    }`}
-                  >
-                    {/* Track Number / Play Indicator */}
-                    <span className="font-sans text-xs tabular-nums w-5 text-center flex-shrink-0">
-                      {isCurrent && isPlaying ? (
-                        <span className="text-ochre font-bold animate-pulse">▶</span>
-                      ) : (
-                        idx + 1
-                      )}
-                    </span>
-
-                    {/* Small Thumbnail */}
-                    <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 bg-lacquer border border-scribe">
-                      <img
-                        src={track.thumbnailUrl}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Title & Artist */}
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`font-sans text-sm font-semibold truncate ${
-                          isCurrent ? 'text-ochre' : 'text-paper group-hover:text-paper'
+                <div className="flex flex-col divide-y divide-scribe/40 rounded-xl bg-substrate/50 border border-scribe/60 p-2 sm:p-3 shadow-md">
+                  {queue.map((track, idx) => {
+                    const isCurrent = idx === currentTrackIndex;
+                    return (
+                      <button
+                        key={`${track.videoId}-${idx}`}
+                        onClick={() => playTrackIndex(idx)}
+                        className={`w-full flex items-center gap-3 p-2.5 text-left rounded-lg transition-colors group ${
+                          isCurrent
+                            ? 'bg-accent/15 text-paper'
+                            : 'hover:bg-white/5 text-kraft hover:text-paper'
                         }`}
                       >
-                        {track.title}
-                      </p>
-                      <p className="font-sans text-xs text-kraft truncate mt-0.5">
-                        {track.artist}
-                      </p>
-                    </div>
+                        {/* Track Number / Play Indicator */}
+                        <span className="font-sans text-xs tabular-nums w-5 text-center flex-shrink-0">
+                          {isCurrent && isPlaying ? (
+                            <span className="text-accent font-bold animate-pulse">▶</span>
+                          ) : (
+                            idx + 1
+                          )}
+                        </span>
 
-                    {/* Duration */}
-                    <span className="font-sans text-xs tabular-nums text-kraft/80 flex-shrink-0 ml-2">
-                      {formatTime(track.duration)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                        {/* Small Thumbnail */}
+                        <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0 bg-lacquer border border-scribe">
+                          <img
+                            src={track.thumbnailUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Title & Artist */}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`font-sans text-sm font-semibold truncate ${
+                              isCurrent ? 'text-accent' : 'text-paper group-hover:text-paper'
+                            }`}
+                          >
+                            {track.title}
+                          </p>
+                          <p className="font-sans text-xs text-kraft truncate mt-0.5">
+                            {track.artist}
+                          </p>
+                        </div>
+
+                        {/* Duration */}
+                        <span className="font-sans text-xs tabular-nums text-kraft/80 flex-shrink-0 ml-2">
+                          {formatTime(track.duration)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              /* Lyrics Panel */
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-display font-bold text-lg text-paper tracking-tight">
+                    Lyrics
+                  </h2>
+                  <span className="font-sans text-xs text-kraft">
+                    Powered by lrclib.net
+                  </span>
+                </div>
+
+                {lyricsData.loading ? (
+                  <div className="py-20 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 animate-pulse">
+                    Locating lyrics...
+                  </div>
+                ) : lyricsData.instrumental ? (
+                  <div className="py-16 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 p-6">
+                    <p className="text-paper font-semibold">Instrumental Composition</p>
+                    <p className="text-xs text-kraft/70 mt-1">
+                      This recording does not contain vocal lyrics.
+                    </p>
+                  </div>
+                ) : lyricsData.plainLyrics ? (
+                  <div className="rounded-xl bg-substrate/50 border border-scribe/60 p-5 sm:p-7 shadow-md">
+                    <pre className="font-sans text-base sm:text-lg text-paper/90 leading-relaxed whitespace-pre-wrap select-text font-normal">
+                      {lyricsData.plainLyrics}
+                    </pre>
+                  </div>
+                ) : (
+                  <div className="py-16 text-center text-kraft font-sans text-sm rounded-xl bg-substrate/40 border border-scribe/60 p-6">
+                    <p className="text-paper font-semibold">Lyrics not available</p>
+                    <p className="text-xs text-kraft/70 mt-1">
+                      No registered lyrics found for this recording.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </div>
