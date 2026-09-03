@@ -1,10 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sidebar } from './components/Navigation/Sidebar';
+import { TopHeader } from './components/Navigation/TopHeader';
 import { MainTrackView } from './components/Player/MainTrackView';
 import { SpotifyPlayerBar } from './components/Player/SpotifyPlayerBar';
 import { ExpandedNowPlaying } from './components/Player/ExpandedNowPlaying';
 import { initLenisInstance } from './lib/lenis';
 
 export const App: React.FC = () => {
+  const [currentTab, setCurrentTab] = useState<'home' | 'explore' | 'radio' | 'audio-lab' | 'liked' | 'playlists'>('home');
+
   useEffect(() => {
     // Initialize Lenis smooth scroll synced to GSAP ticker
     const lenis = initLenisInstance();
@@ -14,14 +18,23 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-lacquer text-paper font-mono selection:bg-accent selection:text-lacquer relative">
-      {/* Editorial Catalog View */}
-      <MainTrackView />
+    <div className="min-h-screen bg-surface text-on-surface font-body-md text-body-md antialiased selection:bg-primary selection:text-surface-dim">
+      {/* 1. Fixed Left Sidebar */}
+      <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} />
 
-      {/* Fixed Flush-Rule Now-Playing Bar */}
+      {/* 2. Main Content Container (offset by sidebar width and player height) */}
+      <div className="pl-gutter-sidebar pb-player-height">
+        {/* Fixed Top Header */}
+        <TopHeader />
+
+        {/* Dynamic Main Track & Dashboard Views */}
+        <MainTrackView />
+      </div>
+
+      {/* 3. Fixed Bottom Lossless Player Bar */}
       <SpotifyPlayerBar />
 
-      {/* Full-screen Expandable Now Playing View with Synchronized Vinyl */}
+      {/* 4. Full-screen Expandable Now Playing View & Lyrics */}
       <ExpandedNowPlaying />
     </div>
   );
